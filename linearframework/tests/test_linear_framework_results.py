@@ -29,7 +29,7 @@ p_2_butterfly_dict = {
     ('p_bar_1', 'p_bar_2'): 0.00047413513077016573,
     ('p_bar_2', 'p_bar_1'): 0.07429998260135516
     }
-p_2_butterfly = g_ops.dict_to_graph(p_2_butterfly_dict)
+# p_2_butterfly = g_ops.dict_to_graph(p_2_butterfly_dict)
 
 erlang_weight = 10 ** (6 * np.random.rand() - 3)
 e_5_dict = {
@@ -38,9 +38,9 @@ e_5_dict = {
     ('3', '4'): erlang_weight,
     ('4', '5'): erlang_weight
 }
-e_5 = g_ops.dict_to_graph(e_5_dict)
+# e_5 = g_ops.dict_to_graph(e_5_dict)
 
-g_dict = {
+k3_dict = {
     ('1', '2'): 1,
     ('1', '3'): 2,
     ('2', '1'): 3,
@@ -48,14 +48,16 @@ g_dict = {
     ('3', '1'): 5,
     ('3', '2'): 6
 }
-k3 = g_ops.dict_to_graph(g_dict)
+# k3 = g_ops.dict_to_graph(g_dict)
 
-graphs = [k3, e_5, p_2_butterfly]
+graph_dicts = [k3_dict, e_5_dict, p_2_butterfly_dict]
 
 
 def test_steady_state_calculators_asserts():
-    for graph in graphs:
-        sym_lap = ca.graph_to_sym_laplacian(graph)
+    for graph_dict in graph_dicts:
+        graph = g_ops.dict_to_graph(graph_dict)
+        edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(graph_dict)
+        sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
         steady_states_from_lap = lfr.steady_states_from_sym_lap(sym_lap)
         steady_states_from_Q_k = lfr.steady_states_from_Q_n_minus_1(sym_lap)
 
@@ -134,16 +136,21 @@ def test_get_j_vecs_from_indices():
 
 
 def test_ca_kth_moment_numerator_asserts():
-    k3_sym_lap = ca.graph_to_sym_laplacian(k3)
+    k3 = g_ops.dict_to_graph(k3_dict)
+    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
+    k3_sym_lap = ca.generate_sym_laplacian(k3, k3_edge_to_sym)
     n = k3_sym_lap.rows
     Q_n_minus_2 = ca.get_sigma_Q_k(k3_sym_lap, n-2)[1]
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 1))) == '1_2 + 2_1 + 2_3'
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 2))) == '2*1_2*2_1 + 2*1_2*(1_2 + 1_3) + 2*1_2*(2_1 + 2_3) + 2*(2_1 + 2_3)**2'
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 3))) == '6*1_2**2*2_1 + 6*1_2*2_1*(1_2 + 1_3) + 12*1_2*2_1*(2_1 + 2_3) + 6*1_2*(1_2 + 1_3)**2 + 6*1_2*(1_2 + 1_3)*(2_1 + 2_3) + 6*1_2*(2_1 + 2_3)**2 + 6*(2_1 + 2_3)**3'
+    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 1))) == 'l_1 + l_3 + l_4'
+    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 2))) == '2*l_1*l_3 + 2*l_1*(l_1 + l_2) + 2*l_1*(l_3 + l_4) + 2*(l_3 + l_4)**2'
+    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 3))) == '6*l_1**2*l_3 + 6*l_1*l_3*(l_1 + l_2) + 12*l_1*l_3*(l_3 + l_4) + 6*l_1*(l_1 + l_2)**2 + 6*l_1*(l_1 + l_2)*(l_3 + l_4) + 6*l_1*(l_3 + l_4)**2 + 6*(l_3 + l_4)**3'
 
 
 def test_ca_kth_moment_numerator_raises():
-    k3_sym_lap = ca.graph_to_sym_laplacian(k3)
+    k3 = g_ops.dict_to_graph(k3_dict)
+    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
+    k3_sym_lap = ca.generate_sym_laplacian(k3, k3_edge_to_sym)
+
     n = k3_sym_lap.rows
     Q_n_minus_2 = ca.get_sigma_Q_k(k3_sym_lap, n-2)[1]
     with pytest.raises(NotImplementedError):
@@ -158,3 +165,11 @@ def test_ca_kth_moment_numerator_raises():
         lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', 'oops', 1)
     with pytest.raises(NotImplementedError):
         lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 'oops')
+
+
+def test_k_moment_fpt_expression_asserts():
+    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
+
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 1))) == "(l_1 + l_3 + l_4)/(l_1*l_4 + l_2*l_3 + l_2*l_4)"
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 2))) == '2*(l_1*l_3 + l_1*(l_1 + l_2) + l_1*(l_3 + l_4) + (l_3 + l_4)**2)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**2'
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 3))) == '6*(l_1**2*l_3 + l_1*l_3*(l_1 + l_2) + 2*l_1*l_3*(l_3 + l_4) + l_1*(l_1 + l_2)**2 + l_1*(l_1 + l_2)*(l_3 + l_4) + l_1*(l_3 + l_4)**2 + (l_3 + l_4)**3)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**3'

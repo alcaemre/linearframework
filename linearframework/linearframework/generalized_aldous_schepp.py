@@ -15,13 +15,12 @@ import linearframework.graph_operations as g_ops
 import linearframework.ca_recurrence as ca
 import linearframework.linear_framework_results as lfr
 
-def generalized_randomness_parameter(graph,  Lap, Q_n_minus_2, source, target, moment):
+def generalized_randomness_parameter(edge_to_weight, edge_to_sym, source, target, moment):
     """calculates the symbolic expression of the moment-th moment of the graph over the mean of the graph to the power of moment
 
     Args:
-        graph (nx.DiGraph): networkx graph of interent
-        Lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of graph
-        Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-2) matrix found using the CA recurrence
+        edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
+        edge_to_sym (dict[tuple[str]: sp.core.symbol.Symbol]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
         source (str): id of source vertex
         target (str): id of target vertex
         moment (int): moment of interest
@@ -29,12 +28,23 @@ def generalized_randomness_parameter(graph,  Lap, Q_n_minus_2, source, target, m
     Returns:
         sympy.core.add.Add: symbolic expression of the moment-th moment of the graph over the mean of the graph to the power of moment
     """
-    if not isinstance(graph, nx.classes.digraph.DiGraph):
-        raise NotImplementedError("graph must be a networkx DiGraph")
-    if not isinstance(Lap, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("Lap must be a sympy matrix")
-    if not isinstance(Q_n_minus_2, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("Q_n_minus_2 must be a sympy matrix")
+    if not isinstance(edge_to_weight, dict):
+        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_weight.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_weight[key], (float, int)):
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    
+    if not isinstance(edge_to_sym, dict):
+        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_sym.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+
+    graph = g_ops.dict_to_graph(edge_to_weight)
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
@@ -42,8 +52,12 @@ def generalized_randomness_parameter(graph,  Lap, Q_n_minus_2, source, target, m
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
     
-    numerator = lfr.ca_kth_moment_numerator(graph,  Lap, Q_n_minus_2, source, target, moment)
-    denominator = lfr.ca_kth_moment_numerator(graph,  Lap, Q_n_minus_2, source, target, 1) ** moment
+    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
+    n = len(graph.nodes)
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
+    
+    numerator = lfr.ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment)
+    denominator = lfr.ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, 1) ** moment
     return numerator / denominator
 
 
