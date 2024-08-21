@@ -91,23 +91,6 @@ def test_generate_sym_lap_raises():
     with pytest.raises(NotImplementedError):
         ca.generate_sym_laplacian(k3, {('a', 'b'): 10})
 
-def test_trace_asserts():
-    """
-    tests that the trace of a laplacian is the sum of all the edge weights
-    """
-    assert ca.trace(k3_sym_lap) == sum(k3_edge_to_symbol_dict.values())
-
-    eye = sp.eye(3)
-
-    assert ca.trace(eye) == 3
-
-def test_trace_raises():
-    """
-    input must be a sympy matrix
-    """
-    with pytest.raises(NotImplementedError):
-        ca.trace('oops')
-
 
 def check_each_row_Q_is_sigma(Q, sigma):
     for i in range(Q.rows):

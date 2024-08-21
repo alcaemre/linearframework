@@ -49,25 +49,6 @@ def generate_sym_laplacian(graph, edge_to_sym):
     return sp.Matrix(sym_lap)
 
 
-def trace(M):
-    """Calculates the trace of a sympy matrix
-
-    Args:
-        M (sympy.matrices.dense.MutableDenseMatrix): a sympy matrix
-
-    Returns:
-        sympy.core.add.Add: trace of M
-    """
-    if not isinstance(M, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("M must be a sympy matrix")
-    
-    tr = 0
-    for i in range(M.shape[0]):
-        row = M.row(i)
-        tr += row[i]
-    return tr
-
-
 def sigma_kpo(L, Q_k, k):
     """given some symbolic laplacian L, some matrix Q_k previously calculated by the CA recurrence, and the k,
     calculates sigma of k + 1
@@ -80,8 +61,11 @@ def sigma_kpo(L, Q_k, k):
     Returns:
         sympy.core.add.Add: sigma of k edges in the graph in question
     """
-    trace_LQ = trace(L * Q_k)
-    return trace_LQ / (k + 1)
+    if False:#k == 0:
+        return 1
+    else:
+        trace_LQ = (L * Q_k).trace()
+        return trace_LQ / (k + 1)
 
 
 def Q_kpo(L, Q_k, s_kpo):
