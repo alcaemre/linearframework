@@ -107,7 +107,7 @@ def get_sigma_Q_k(sym_Lap, k):
     eye = sp.eye(sym_Lap.shape[0])
     Q = eye
     n = 0
-    sigma = sigma_kpo(sym_Lap, Q, n)
+    sigma = 1
     while n < k:
         sigma = sigma_kpo(sym_Lap, Q, n)
         Q = Q_kpo(sym_Lap, Q, sigma)
