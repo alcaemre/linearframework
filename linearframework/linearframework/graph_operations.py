@@ -150,7 +150,7 @@ def evaluate_at_many_points(edge_to_weight, edge_to_sym, expression, num_samples
         if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
 
-    if not isinstance(expression, sp.core.mul.Mul):
+    if not isinstance(expression, (sp.core.mul.Mul, sp.core.numbers.Integer)):
         raise NotImplementedError("expression must be a sympy expression")
     if not isinstance(num_samples, int):
         raise NotImplementedError("num_samples must be an int")

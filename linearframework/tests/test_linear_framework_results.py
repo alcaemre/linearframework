@@ -55,21 +55,24 @@ graph_dicts = [k3_dict, e_5_dict, p_2_butterfly_dict]
 
 def test_steady_state_calculators_asserts():
     for graph_dict in graph_dicts:
-        graph = g_ops.dict_to_graph(graph_dict)
         edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(graph_dict)
-        sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
-        steady_states_from_lap = lfr.steady_states_from_sym_lap(sym_lap)
-        steady_states_from_Q_k = lfr.steady_states_from_Q_n_minus_1(sym_lap)
+        steady_states_from_lap = lfr.steady_states_from_sym_lap(graph_dict, edge_to_sym)
+        steady_states_from_Q_k = lfr.steady_states_from_Q_n_minus_1(graph_dict, edge_to_sym)
 
-        for i in range(len(steady_states_from_lap)):
-            assert sp.simplify(steady_states_from_lap[i] - steady_states_from_Q_k[i]) == 0
+        for key in steady_states_from_lap.keys():
+            assert sp.expand(steady_states_from_lap[key] - steady_states_from_Q_k[key]) == 0
 
 
 def test_steady_state_calculators_raises():
+    edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_sym_lap("oops")
+        lfr.steady_states_from_sym_lap("oops", edge_to_sym)
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_Q_n_minus_1("oops")
+        lfr.steady_states_from_sym_lap(edge_to_sym, edge_to_sym)    
+    with pytest.raises(NotImplementedError):
+        lfr.steady_states_from_Q_n_minus_1(k3_dict, "oops")
+    with pytest.raises(NotImplementedError):
+        lfr.steady_states_from_Q_n_minus_1(k3_dict, k3_dict)
 
 
 s = [

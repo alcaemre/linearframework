@@ -17,18 +17,35 @@ from functools import reduce
 import linearframework.graph_operations as g_ops
 import linearframework.ca_recurrence as ca
 
-def steady_states_from_sym_lap(sym_lap):
+def steady_states_from_sym_lap(edge_to_weight, edge_to_sym):
     """calculates the symbolic formula for the steady states of a graph from its symbolic laplacian using the first-minors MTT.
     This method is much faster than using Q_k matrices, since it circumvents the need for the calculation of Q_k matrices.
 
     Args:
-        sym_lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of some graph
+        edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
+        edge_to_sym (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
 
     Returns:
         list[sympy.core.mul.Mul]: list of the steady states of each vertex in the graph in canonical order
     """
-    if not isinstance(sym_lap, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("sym_lap must be a sympy matrix")
+    if not isinstance(edge_to_weight, dict):
+        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_weight.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_weight[key], (float, int)):
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    
+    if not isinstance(edge_to_sym, dict):
+        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_sym.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+
+    graph = g_ops.dict_to_graph(edge_to_weight)
+    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
 
     n = sym_lap.rows
     rhos = []
@@ -38,25 +55,43 @@ def steady_states_from_sym_lap(sym_lap):
     
     denominator = sum(rhos)
 
-    steady_states = []
-    for rho in rhos:
-        steady_states.append(rho / denominator)
+    nodes = list(graph.nodes)
+    steady_states = {}
+    for i in range(len(rhos)):
+        steady_states[nodes[i]] = rhos[i] / denominator
 
     return steady_states
 
-def steady_states_from_Q_n_minus_1(sym_lap):
+def steady_states_from_Q_n_minus_1(edge_to_weight, edge_to_sym):
     """calculates the symbolic formula for the steady states of a graph from the diagonal elements of Q_(n-1).
     This method is much slower than the alternative that uses the first-minors MTT.
     It is mostly used for testing to ensure the two outputs are equal.
 
     Args:
-        sym_lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of some graph
+        edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
+        edge_to_sym (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
 
     Returns:
         list[sympy.core.mul.Mul]: list of the steady states of each vertex in the graph in canonical order
     """
-    if not isinstance(sym_lap, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("sym_lap must be a sympy matrix")
+    if not isinstance(edge_to_weight, dict):
+        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_weight.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_weight[key], (float, int)):
+            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
+    
+    if not isinstance(edge_to_sym, dict):
+        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_sym.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+
+    graph = g_ops.dict_to_graph(edge_to_weight)
+    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
 
     n = sym_lap.rows
     Q_n1 = ca.get_sigma_Q_k(sym_lap, n-1)[1]
@@ -67,9 +102,10 @@ def steady_states_from_Q_n_minus_1(sym_lap):
     
     denominator = sum(rhos)
 
-    steady_states = []
-    for rho in rhos:
-        steady_states.append(sp.simplify(rho / denominator))
+    nodes = list(graph.nodes)
+    steady_states = {}
+    for i in range(len(rhos)):
+        steady_states[nodes[i]] = rhos[i] / denominator
     
     return steady_states
 
