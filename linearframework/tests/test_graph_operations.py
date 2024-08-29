@@ -190,16 +190,29 @@ def test_evaluate_at_many_points_raises():
     k3_second_moment_formula = lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, '1', '3', 2)
 
     with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression('oops', k3_edge_to_sym, '1', '3', 2)
+        g_ops.evaluate_at_many_points('oops', k3_edge_to_sym, k3_second_moment_formula, 10)
     with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_sym, k3_edge_to_sym, '1', '3', 2)
+        g_ops.evaluate_at_many_points(k3_edge_to_weight, 'oops', k3_second_moment_formula, 10)
     with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_weight, 'oops', '1', '3', 2)
+        g_ops.evaluate_at_many_points(k3_edge_to_weight, k3_edge_to_sym, 'oops', 10)
     with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_weight, '1', '3', 2)
+        g_ops.evaluate_at_many_points(k3_edge_to_weight, k3_edge_to_sym, k3_second_moment_formula, 'oops')
+
+
+def test_edges_to_edge_to_sym_asserts():
+    k3_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5'),
+    ]
+    str(g_ops.edge_to_sym_from_edges(k3_edges)) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6, ('2', '4'): l_7, ('3', '5'): l_8}"
+
+
+def test_edges_to_edge_to_sym_raises():
     with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, 1, '3', 2)
-    with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, '1', 3, 2)
-    with pytest.raises(NotImplementedError):
-        lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, '1', '3', '2')
+        g_ops.edge_to_sym_from_edges('oops')

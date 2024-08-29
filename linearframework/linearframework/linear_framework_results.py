@@ -190,24 +190,34 @@ def filter_by_forbidden_factors(forest_weight_str_list, forbidden_factor_strs):
     return filtered_forest_weights
 
 
-def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, j, q, i):
+def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, roots, i, j):
+    """calculates the sum of the weights of the spanning forests rooted at roots, with a path from i to j
+
+    Args:
+        graph (nx.DiGraph): the graph of interest
+        Lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of graph
+        Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-2) matrix of graph
+        roots (list[str]): list of desired roots
+        i (str): vertex with a required path from
+        j (str): vertex with a required path to
+
+    Returns:
+        sympy.core.add.Add: sum of the weights of the spanning forests rooted at roots, with a path from i to j
+    """
     nodes = list(graph.nodes)
-    j_index = nodes.index(j)
-    q_index = nodes.index(q)
     i_index = nodes.index(i)
+    j_index = nodes.index(j)
 
     # finding the factors to throw out--the weights of edges outgoing from our roots j, q
     forbidden_factor_str_list = []
 
-    L_j = -1 * Lap.row(j_index)
-    L_j.col_del(j_index)
-    L_j_str_list = [str(factor) for factor in list(L_j)]
-    forbidden_factor_str_list.extend(L_j_str_list)
+    for root in roots:
+        root_index = nodes.index(root)
 
-    L_q = -1* Lap.row(q_index)
-    L_q.col_del(q_index)
-    L_q_str_list = [str(factor) for factor in list(L_q)]
-    forbidden_factor_str_list.extend(L_q_str_list)
+        L_root = -1 * Lap.row(root_index)
+        L_root.col_del(root_index)
+        L_j_str_list = [str(factor) for factor in list(L_root)]
+        forbidden_factor_str_list.extend(L_j_str_list)
 
     Q_ij = Q_n_minus_2.row(i_index)[j_index]
     expanded_Q_ij = sp.expand(Q_ij)
@@ -265,7 +275,7 @@ def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment
                 j_n_1 = j_vec[u-1]
             j_n = j_vec[u]
 
-            sum_weights = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, j_n, target, j_n_1)
+            sum_weights = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, [j_n, target], j_n_1, j_n)
 
             prod_inner_sums *= sum_weights
 
@@ -312,7 +322,6 @@ def k_moment_fpt_expression(edge_to_weight, edge_to_sym, source, target, moment)
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
     
-    graph = g_ops.dict_to_graph(edge_to_weight)
     sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
     n = sym_lap.rows
     Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
@@ -323,6 +332,48 @@ def k_moment_fpt_expression(edge_to_weight, edge_to_sym, source, target, moment)
     denominator = sym_lap.minor(q, q)
     denominator = denominator ** moment
 
+    return numerator / denominator
+
+
+def splitting_probability(edge_to_sym, terminal_vertices, source, target):
+    """Calculates the splitting probability of the graph represented by edge_to_sym from source to target.
+
+    Args:
+        edge_to_sym (dict[tuple[str]: sympy.core.symbol.Symbol]): dictionary with the form {('v_1', 'v_2): l_i} 
+        terminal_vertices (list[str]): list of the ids of the terminal vertices in the graph represented by edge_to_sym
+        source (str): vertex id of source of splitting probability
+        target (str): vertex id of target of splitting probability
+
+    Returns:
+        sympy.core.mul.Mul: sympy expression of splitting probability
+    """
+    if not isinstance(edge_to_sym, dict):
+        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    for key in edge_to_sym.keys():
+        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
+            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    if not isinstance(terminal_vertices, list):
+        raise NotImplementedError("terminal vertices must be a list of the string ids of the terminal vertices in edge_to_sym")
+    
+    graph = nx.DiGraph()
+    graph.add_edges_from(edge_to_sym.keys())
+    
+    for vertex in terminal_vertices:
+        if vertex not in list(graph.nodes()):
+            raise NotImplementedError("terminal vertices must be a list of the string ids of the terminal vertices in edge_to_sym")
+    if source not in list(graph.nodes):
+        raise NotImplementedError("source must a be a vertex of the graph represented by edge_to_sym")
+    if target not in list(graph.nodes):
+        raise NotImplementedError("target must a be a vertex of the graph represented by edge_to_sym")
+    
+    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
+    n = sym_lap.rows
+    m = len(terminal_vertices)
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-m)[1]
+    denominator = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, terminal_vertices, target, target)
+    numerator = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, terminal_vertices, source, target)
     return numerator / denominator
 
     

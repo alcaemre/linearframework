@@ -176,3 +176,44 @@ def test_k_moment_fpt_expression_asserts():
     assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 1))) == "(l_1 + l_3 + l_4)/(l_1*l_4 + l_2*l_3 + l_2*l_4)"
     assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 2))) == '2*(l_1*l_3 + l_1*(l_1 + l_2) + l_1*(l_3 + l_4) + (l_3 + l_4)**2)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**2'
     assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 3))) == '6*(l_1**2*l_3 + l_1*l_3*(l_1 + l_2) + 2*l_1*l_3*(l_3 + l_4) + l_1*(l_1 + l_2)**2 + l_1*(l_1 + l_2)*(l_3 + l_4) + l_1*(l_3 + l_4)**2 + (l_3 + l_4)**3)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**3'
+
+
+def test_splitting_probability_asserts():
+    edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    edge_to_sym = g_ops.edge_to_sym_from_edges(edges)
+    assert str(lfr.splitting_probability(edge_to_sym, ['4', '5'], '1', '5')) == '(l_1*l_4*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_7*l_8)/(l_1*l_4*l_8 + l_1*l_5*l_7 + l_1*l_6*l_7 + l_1*l_7*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_6*l_7 + l_2*l_7*l_8)'
+
+
+def test_splitting_probability_raises():
+    edge_to_weight = {
+        ('1', '2'): 1,
+        ('1', '3'): 2,
+        ('2', '1'): 3,
+        ('2', '3'): 4,
+        ('3', '1'): 5,
+        ('3', '2'): 6,
+        ('2', '4'): 7,
+        ('3', '5'): 8
+    }
+    edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(edge_to_weight)
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability('oops', ['4', '5'], '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability(edge_to_weight, ['4', '5'], '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability(edge_to_sym, 'oops', '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability(edge_to_sym, [4, '5'], '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability(edge_to_sym, ['4', '5'], 1, '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability(edge_to_sym, ['4', '5'], '1', 5)

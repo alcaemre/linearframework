@@ -53,6 +53,26 @@ def dict_to_graph(edge_to_weight):
     return graph
 
 
+def edge_to_sym_from_edges(edges):
+    """takes a list of edges (tuples of 2 vertex id's, in the form ('v_1', 'v_2'))
+    and returns a dictionary of the same edges pointing to new sympy symbols.
+    These symbols are in the format l_i where i is the order of the initialization of the symbols.
+
+    Args:
+        edge_to_weight (dict[tuple[str]: float]): a dictionary of edges to weights
+
+    Returns:
+        dict[tuple[str]: sympy.core.symbol.Symbol]: dictionary of edges to symbols (representing weights)
+    """
+    if not isinstance(edges, list):
+        raise NotImplementedError("edges must be a list of tuples of 2 vertex id's, in the form ('v_1', 'v_2')")
+    edges = edges
+    edge_to_sym = {}
+    for i in range(len(edges)):
+        edge_to_sym[edges[i]] = sp.symbols(f'l_{i + 1}')
+    return edge_to_sym
+
+
 def edge_to_sym_from_edge_to_weight(edge_to_weight):
     """takes a dictionary of edges (tuples of 2 vertex id's, in the form ('v_1', 'v_2')) pointing to the weights of the edges they represent
     and returns a dictionary of the same edges pointing to new sympy symbols.
