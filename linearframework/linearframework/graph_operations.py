@@ -133,7 +133,7 @@ def edges_to_random_weight_dict(edges, seed=None):
         seed (int, float): seed of random process
 
     Returns:
-        dict[tuple[str]: float]: _description_
+        dict[tuple[str]: float]: edges to randomly generated weights
     """
     np.random.seed(seed)
     edge_to_weight = {}
@@ -142,7 +142,7 @@ def edges_to_random_weight_dict(edges, seed=None):
     return edge_to_weight
 
 
-def evaluate_at_many_points(edge_to_weight, edge_to_sym, expression, num_samples):
+def evaluate_at_many_points(edge_to_sym, expression, num_samples):
     """evaluates the sympy expression for some linear framework result
 
     Args:
@@ -154,14 +154,6 @@ def evaluate_at_many_points(edge_to_weight, edge_to_sym, expression, num_samples
     Returns:
         list[float]: list of sampled datapoints
     """
-    if not isinstance(edge_to_weight, dict):
-        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_weight.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_weight[key], (float, int)):
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    
     if not isinstance(edge_to_sym, dict):
         raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
     for key in edge_to_sym.keys():
@@ -177,7 +169,7 @@ def evaluate_at_many_points(edge_to_weight, edge_to_sym, expression, num_samples
 
     datapoints = []
     for i in tqdm.tqdm(range(num_samples)):
-        new_edge_to_weight = edges_to_random_weight_dict(edge_to_weight.keys(), seed=i)
+        new_edge_to_weight = edges_to_random_weight_dict(list(edge_to_sym.keys()), seed=i)
         new_sym_to_weight = make_sym_to_weight(new_edge_to_weight, edge_to_sym)
         new_datapoint = expression.subs(new_sym_to_weight)
         datapoints.append(new_datapoint)

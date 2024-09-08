@@ -170,7 +170,7 @@ def test_evaluate_at_many_points_asserts():
 
     k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_edge_to_weight)
     k3_second_moment_formula = lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, '1', '3', 2)
-    k3_second_moment_datapoints = g_ops.evaluate_at_many_points(k3_edge_to_weight, k3_edge_to_sym, k3_second_moment_formula, 50)
+    k3_second_moment_datapoints = g_ops.evaluate_at_many_points(k3_edge_to_sym, k3_second_moment_formula, 50)
     for i in range(len(expected_datapoints)):
         assert (k3_second_moment_datapoints[i] - expected_datapoints[i]) < (k3_second_moment_datapoints[i] * 0.05)
 
@@ -186,17 +186,14 @@ def test_evaluate_at_many_points_raises():
     }
 
     k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_edge_to_weight)
-    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_edge_to_weight)
     k3_second_moment_formula = lfr.k_moment_fpt_expression(k3_edge_to_weight, k3_edge_to_sym, '1', '3', 2)
 
     with pytest.raises(NotImplementedError):
-        g_ops.evaluate_at_many_points('oops', k3_edge_to_sym, k3_second_moment_formula, 10)
+        g_ops.evaluate_at_many_points('oops', k3_second_moment_formula, 10)
     with pytest.raises(NotImplementedError):
-        g_ops.evaluate_at_many_points(k3_edge_to_weight, 'oops', k3_second_moment_formula, 10)
+        g_ops.evaluate_at_many_points(k3_edge_to_sym, 'oops', 10)
     with pytest.raises(NotImplementedError):
-        g_ops.evaluate_at_many_points(k3_edge_to_weight, k3_edge_to_sym, 'oops', 10)
-    with pytest.raises(NotImplementedError):
-        g_ops.evaluate_at_many_points(k3_edge_to_weight, k3_edge_to_sym, k3_second_moment_formula, 'oops')
+        g_ops.evaluate_at_many_points(k3_edge_to_sym, k3_second_moment_formula, 'oops')
 
 
 def test_edges_to_edge_to_sym_asserts():

@@ -61,7 +61,7 @@ def sigma_kpo(L, Q_k, k):
     Returns:
         sympy.core.add.Add: sigma of k edges in the graph in question
     """
-    if False:#k == 0:
+    if False:
         return 1
     else:
         trace_LQ = (L * Q_k).trace()
