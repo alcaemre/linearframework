@@ -56,7 +56,7 @@ def test_gen_core_butterfly_dict_raises():
 def test_gen_erlang_asserts():
     expected_erlang_dict = {('1', '2'): 1, ('2', '3'): 1, ('3', '4'): 1, ('4', '5'): 1, ('5', '6'): 1}
 
-    assert gen_erlang_process_dict(5, rate=1) == expected_erlang_dict
+    assert gen_erlang_process_dict(6, rate=1) == expected_erlang_dict
 
 def test_gen_erlang_raises():
     with pytest.raises(NotImplementedError):

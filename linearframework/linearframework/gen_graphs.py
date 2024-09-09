@@ -1,6 +1,5 @@
 import numpy as np
 import networkx as nx
-# from spanning_forests import Spanning_Forest
 
 def gen_erlang_process_dict(number_of_states, rate=None):
     """generates the edge-to-weight dictionary of an erlang process. 
@@ -13,8 +12,8 @@ def gen_erlang_process_dict(number_of_states, rate=None):
     Returns:
         dict[tuple[str]: float]: edge-to-weight dictionary of an erlang process
     """
-    if not isinstance(number_of_states, (float, int)):
-        raise NotImplementedError("number_of_states must be a float or an int")
+    if not isinstance(number_of_states, (float, int)) or number_of_states < 2:
+        raise NotImplementedError("number_of_states must be an int and number_of_states > 1")
     if not isinstance(rate, (float, int)) and rate != None:
         raise NotImplementedError("rate must be a float or an int or None")
 
@@ -22,7 +21,7 @@ def gen_erlang_process_dict(number_of_states, rate=None):
         rate = 10 ** (6 * np.random.rand() - 3)
     
     erlang_dict = {}
-    for i in range(1, (number_of_states + 1)):
+    for i in range(1, (number_of_states)):
         erlang_dict[(f'{i}', f'{i + 1}')] = rate
 
     return erlang_dict

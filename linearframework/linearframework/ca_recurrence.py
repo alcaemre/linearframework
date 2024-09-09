@@ -4,49 +4,9 @@ title: ca_recurrence.py
 date: 2024-08-08 12:31:08
 """
 
-import linearframework.graph_operations as g_ops
 import networkx as nx
 import sympy as sp
 import numpy as np
-
-# def generate_sym_laplacian(graph, edge_to_sym):
-#     """Given a graph, makes sympy symbols for each edge weight, 
-#     and returns the Laplacian matrix of the graph with symbolic edge weights.
-#     This function initializes those symbols.
-
-#     Args:
-#         graph (nx.DiGraph): graph of interest
-#         edge_to_sym (dict[tuple[str]: sympy.core.symbol.Symbol]): dictionary of edges to symbols
-
-#     Returns:
-#         sympy.matrix: sympy Laplacian matrix
-#     """
-#     if not isinstance(graph, nx.classes.digraph.DiGraph):
-#         raise NotImplementedError
-    
-#     if not isinstance(edge_to_sym, dict):
-#         raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#     for key in edge_to_sym.keys():
-#         if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#         if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-    
-#     nodes = list(graph.nodes())
-#     sym_lap = []
-#     for i in range(len(nodes)):
-#         sym_lap.append([])
-#         for j in range(len(nodes)):
-#             sym_lap[i].append(0)
-    
-#     for edge in list(graph.edges()):
-#         i = nodes.index(edge[0])
-#         j = nodes.index(edge[1])
-
-#         sym_lap[i][j] = -edge_to_sym[edge]
-#         sym_lap[i][i] = sym_lap[i][i] + (- sym_lap[i][j])
-
-#     return sp.Matrix(sym_lap)
 
 
 def sigma_kpo(L, Q_k, k):

@@ -11,8 +11,6 @@ import networkx as nx
 import sympy as sp
 import numpy as np
 
-import linearframework.graph_operations as g_ops
-
 from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 import linearframework.linear_framework_results as lfr
@@ -156,15 +154,21 @@ def test_get_j_vecs_from_indices():
 def test_ca_kth_moment_numerator_asserts():
 
     k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+    sym_lap = k3.sym_lap
+    n = sym_lap.rows
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
 
-    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 1))) == 'l_1 + l_3 + l_4'
-    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 2))) == '2*l_1*l_3 + 2*l_1*(l_1 + l_2) + 2*l_1*(l_3 + l_4) + 2*(l_3 + l_4)**2'
-    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 3))) == '6*l_1**2*l_3 + 6*l_1*l_3*(l_1 + l_2) + 12*l_1*l_3*(l_3 + l_4) + 6*l_1*(l_1 + l_2)**2 + 6*l_1*(l_1 + l_2)*(l_3 + l_4) + 6*l_1*(l_3 + l_4)**2 + 6*(l_3 + l_4)**3'
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, '1', '3', 1))) == 'l_1 + l_3 + l_4'
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, '1', '3', 2))) == '2*l_1*l_3 + 2*l_1*(l_1 + l_2) + 2*l_1*(l_3 + l_4) + 2*(l_3 + l_4)**2'
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, '1', '3', 3))) == '6*l_1**2*l_3 + 6*l_1*l_3*(l_1 + l_2) + 12*l_1*l_3*(l_3 + l_4) + 6*l_1*(l_1 + l_2)**2 + 6*l_1*(l_1 + l_2)*(l_3 + l_4) + 6*l_1*(l_3 + l_4)**2 + 6*(l_3 + l_4)**3'
 
 
 def test_ca_kth_moment_numerator_raises():
 
     k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+    sym_lap = k3.sym_lap
+    n = sym_lap.rows
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
 
     k3_2t_edges = [
         ('1', '2'),
@@ -179,15 +183,17 @@ def test_ca_kth_moment_numerator_raises():
     k3_2t = LinearFrameworkGraph(k3_2t_edges)
 
     with pytest.raises(NotImplementedError):
-        lfr._ca_kth_moment_numerator('oops', '1', '3', 1)
+        lfr._ca_kth_moment_numerator('oops', Q_n_minus_2, '1', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr._ca_kth_moment_numerator(k3_2t, '1', '3', 1)
+        lfr._ca_kth_moment_numerator(k3_2t, Q_n_minus_2, '1', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr._ca_kth_moment_numerator(k3, 'oops', '3', 1)
+        lfr._ca_kth_moment_numerator(k3, 'oops', '1', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr._ca_kth_moment_numerator(k3, '1', 'oops', 1)
+        lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, 'oops', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr._ca_kth_moment_numerator(k3, '1', '3', 'oops')
+        lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, '1', 'oops', 1)
+    with pytest.raises(NotImplementedError):
+        lfr._ca_kth_moment_numerator(k3, Q_n_minus_2, '1', '3', 'oops')
 
 
 def test_k_moment_fpt_expression_asserts():

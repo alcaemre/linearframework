@@ -11,11 +11,11 @@ import networkx as nx
 import numpy as np
 from math import factorial
 
-import linearframework.graph_operations as g_ops
+from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 import linearframework.linear_framework_results as lfr
 
-def generalized_randomness_parameter(edge_to_weight, edge_to_sym, source, target, moment):
+def generalized_randomness_parameter(graph, source, target, moment):
     """calculates the symbolic expression of the moment-th moment of the graph over the mean of the graph to the power of moment
 
     Args:
@@ -28,23 +28,11 @@ def generalized_randomness_parameter(edge_to_weight, edge_to_sym, source, target
     Returns:
         sympy.core.add.Add: symbolic expression of the moment-th moment of the graph over the mean of the graph to the power of moment
     """
-    if not isinstance(edge_to_weight, dict):
-        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_weight.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_weight[key], (float, int)):
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    
-    if not isinstance(edge_to_sym, dict):
-        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_sym.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+    if len(graph.terminal_nodes) > 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
 
-    graph = g_ops.dict_to_graph(edge_to_weight)
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
@@ -52,12 +40,12 @@ def generalized_randomness_parameter(edge_to_weight, edge_to_sym, source, target
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
     
-    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
+    sym_lap = graph.sym_lap
     n = len(graph.nodes)
     Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
     
-    numerator = lfr.ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment)
-    denominator = lfr.ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, 1) ** moment
+    numerator = lfr._ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment)
+    denominator = lfr._ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, 1) ** moment
     return numerator / denominator
 
 

@@ -10,7 +10,8 @@ import pytest
 import sympy as sp
 import networkx as nx
 import numpy as np
-import linearframework.graph_operations as g_ops
+
+from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 
 p_2_butterfly_dict = {
@@ -27,7 +28,7 @@ p_2_butterfly_dict = {
     ('p_bar_1', 'p_bar_2'): 0.00047413513077016573,
     ('p_bar_2', 'p_bar_1'): 0.07429998260135516
     }
-p_2_butterfly = g_ops.dict_to_graph(p_2_butterfly_dict)
+p_2_butterfly = LinearFrameworkGraph(list(p_2_butterfly_dict.keys()))
 
 
 erlang_weight = 10 ** (6 * np.random.rand() - 3)
@@ -37,7 +38,7 @@ e_5_dict = {
     ('3', '4'): erlang_weight,
     ('4', '5'): erlang_weight
 }
-e_5 = g_ops.dict_to_graph(e_5_dict)
+e_5 = LinearFrameworkGraph(list(e_5_dict.keys()))
 
 k3_dict = {
     ('1', '2'): 1,
@@ -47,54 +48,7 @@ k3_dict = {
     ('3', '1'): 5,
     ('3', '2'): 6
 }
-k3 = g_ops.dict_to_graph(k3_dict)
-
-# edge_to_symbol_dict = {
-#     ('1', '2'): sp.symbols('1_2'),
-#     ('1', '3'): sp.symbols('1_3'),
-#     ('2', '1'): sp.symbols('2_1'),
-#     ('2', '3'): sp.symbols('2_3'),
-#     ('3', '1'): sp.symbols('3_1'),
-#     ('3', '2'): sp.symbols('3_2')
-# }
-k3_edge_to_symbol_dict = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
-k3_sym_lap = ca.generate_sym_laplacian(k3, k3_edge_to_symbol_dict)
-
-
-def test_generate_sym_laplacian():
-    """
-    tests that the laplacian of the k3 graph is in the expected form and that all rows sum to zero
-    """
-
-    expected_k3_sym_lap = sp.Matrix([
-        [k3_edge_to_symbol_dict[('1', '2')] + k3_edge_to_symbol_dict[('1', '3')], -k3_edge_to_symbol_dict[('1', '2')], -k3_edge_to_symbol_dict[('1', '3')]],
-        [-k3_edge_to_symbol_dict[('2', '1')], k3_edge_to_symbol_dict[('2', '1')] + k3_edge_to_symbol_dict[('2', '3')], -k3_edge_to_symbol_dict[('2', '3')]],
-        [-k3_edge_to_symbol_dict[('3', '1')], -k3_edge_to_symbol_dict[('3', '2')], k3_edge_to_symbol_dict[('3', '1')] + k3_edge_to_symbol_dict[('3', '2')]]
-    ])
-
-    for i in range(len(k3_sym_lap)):
-        assert k3_sym_lap[i] == expected_k3_sym_lap[i]
-
-    for j in range(k3_sym_lap.rows):
-        assert sum(k3_sym_lap.row(j)) == 0
-
-def test_generate_sym_lap_raises():
-    """
-    input must be a graph
-    """
-    with pytest.raises(NotImplementedError):
-        ca.generate_sym_laplacian('oops', k3_edge_to_symbol_dict)
-    
-    with pytest.raises(NotImplementedError):
-        ca.generate_sym_laplacian(k3, 'oops')
-
-    with pytest.raises(NotImplementedError):
-        ca.generate_sym_laplacian(k3, {('a', 'b'): 10})
-
-
-def check_each_row_Q_is_sigma(Q, sigma):
-    for i in range(Q.rows):
-        assert sum
+k3 = LinearFrameworkGraph(list(k3_dict.keys()))
 
 
 def check_each_row_sum_Q_is_sigma(Q, sigma):
@@ -102,7 +56,7 @@ def check_each_row_sum_Q_is_sigma(Q, sigma):
         assert sp.expand(sum(Q.row(i)) - sigma) == 0
 
 
-def asserts_q_kpo_s_kpo_by_graph(graph, edge_to_symbol_dict):
+def asserts_q_kpo_s_kpo_by_graph(graph):
     """given a graph, goes through all possible Q_k matrices and their associated s_k values.
     We verify that these values are correct by checking that
     (i) for any k, the sum of each row of Q_k is constant and is equal to sigma_k
@@ -113,7 +67,7 @@ def asserts_q_kpo_s_kpo_by_graph(graph, edge_to_symbol_dict):
     """
     n = len(graph.nodes)
     k = 0
-    sym_lap = ca.generate_sym_laplacian(graph, edge_to_symbol_dict)
+    sym_lap = graph.sym_lap
     eye = sp.eye(sym_lap.shape[0])
     Q = eye
     sigma = 1
@@ -139,12 +93,10 @@ def test_Q_kpo_and_sigma_kpo_asserts():
     - p4 butterfly graph (butterfly with 4 proximal vertices)
     - erlang process on 5 vertices
     """
-    graph_dicts = [k3_dict, p_2_butterfly_dict, e_5_dict]
+    graphs = [k3, p_2_butterfly, e_5]
 
-    for graph_dict in graph_dicts:
-        graph = g_ops.dict_to_graph(graph_dict)
-        edge_to_symbol_dict = g_ops.edge_to_sym_from_edge_to_weight(graph_dict)
-        asserts_q_kpo_s_kpo_by_graph(graph, edge_to_symbol_dict)
+    for graph in graphs:
+        asserts_q_kpo_s_kpo_by_graph(graph)
 
 def test_get_sigma_Q_k_raises():
 
@@ -153,6 +105,7 @@ def test_get_sigma_Q_k_raises():
     
 
     with pytest.raises(NotImplementedError):
+        k3_sym_lap = k3.sym_lap
         ca.get_sigma_Q_k(k3_sym_lap, 'oops')
 
 

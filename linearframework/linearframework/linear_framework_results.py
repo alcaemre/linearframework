@@ -14,8 +14,6 @@ from math import factorial
 from operator import mul
 from functools import reduce
 
-import linearframework.graph_operations as g_ops
-
 from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 
@@ -212,7 +210,7 @@ def sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, roots, i, j):
     return sum_sym_weights
 
 
-def _ca_kth_moment_numerator(graph, source, target, moment):
+def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
     """ calculates the numerator of the k-th moment of a graph using the Q_(n-2) matrix given by the CA recurrence.
 
     Args:
@@ -229,6 +227,8 @@ def _ca_kth_moment_numerator(graph, source, target, moment):
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
     if len(graph.terminal_nodes) > 1:
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+    if not isinstance(Q_n_minus_2, sp.matrices.dense.MutableDenseMatrix):
+        raise NotImplementedError("Q_n_minus_2 must be a sympy matrix, and a Q_(n-2) matrix")
 
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
@@ -236,10 +236,6 @@ def _ca_kth_moment_numerator(graph, source, target, moment):
         raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
-
-    sym_lap = graph.sym_lap
-    n = sym_lap.rows
-    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
 
     I = list(graph.nodes)
     I.remove(target)
@@ -291,7 +287,11 @@ def k_moment_fpt_expression(graph, source, target, moment):
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
 
-    numerator = _ca_kth_moment_numerator(graph, source, target, moment)
+    sym_lap = graph.sym_lap
+    n = sym_lap.rows
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
+
+    numerator = _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment)
     q = list(graph.nodes).index(target)
 
     sym_lap = graph.sym_lap
