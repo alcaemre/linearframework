@@ -12,6 +12,8 @@ import sympy as sp
 import numpy as np
 
 import linearframework.graph_operations as g_ops
+
+from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 import linearframework.linear_framework_results as lfr
 
@@ -48,31 +50,44 @@ k3_dict = {
     ('3', '1'): 5,
     ('3', '2'): 6
 }
-# k3 = g_ops.dict_to_graph(g_dict)
 
 graph_dicts = [k3_dict, e_5_dict, p_2_butterfly_dict]
 
 
 def test_steady_state_calculators_asserts():
     for graph_dict in graph_dicts:
-        edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(graph_dict)
-        steady_states_from_lap = lfr.steady_states_from_sym_lap(graph_dict, edge_to_sym)
-        steady_states_from_Q_k = lfr.steady_states_from_Q_n_minus_1(graph_dict, edge_to_sym)
+
+        graph = LinearFrameworkGraph(list(graph_dict.keys()))
+        steady_states_from_lap = lfr.steady_states_from_sym_lap(graph)
+        steady_states_from_Q_k = lfr.steady_states_from_Q_n_minus_1(graph)
 
         for key in steady_states_from_lap.keys():
             assert sp.expand(steady_states_from_lap[key] - steady_states_from_Q_k[key]) == 0
 
 
 def test_steady_state_calculators_raises():
-    edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
+ 
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_sym_lap("oops", edge_to_sym)
+        lfr.steady_states_from_sym_lap(k3_2t)
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_sym_lap(edge_to_sym, edge_to_sym)    
+        lfr.steady_states_from_sym_lap('oops')
+
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_Q_n_minus_1(k3_dict, "oops")
+        lfr.steady_states_from_Q_n_minus_1(k3_2t)
     with pytest.raises(NotImplementedError):
-        lfr.steady_states_from_Q_n_minus_1(k3_dict, k3_dict)
+        lfr.steady_states_from_Q_n_minus_1('oops')
 
 
 s = [
