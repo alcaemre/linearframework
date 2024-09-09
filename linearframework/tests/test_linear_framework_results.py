@@ -154,44 +154,77 @@ def test_get_j_vecs_from_indices():
 
 
 def test_ca_kth_moment_numerator_asserts():
-    k3 = g_ops.dict_to_graph(k3_dict)
-    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
-    k3_sym_lap = ca.generate_sym_laplacian(k3, k3_edge_to_sym)
-    n = k3_sym_lap.rows
-    Q_n_minus_2 = ca.get_sigma_Q_k(k3_sym_lap, n-2)[1]
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 1))) == 'l_1 + l_3 + l_4'
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 2))) == '2*l_1*l_3 + 2*l_1*(l_1 + l_2) + 2*l_1*(l_3 + l_4) + 2*(l_3 + l_4)**2'
-    assert str(sp.simplify(lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 3))) == '6*l_1**2*l_3 + 6*l_1*l_3*(l_1 + l_2) + 12*l_1*l_3*(l_3 + l_4) + 6*l_1*(l_1 + l_2)**2 + 6*l_1*(l_1 + l_2)*(l_3 + l_4) + 6*l_1*(l_3 + l_4)**2 + 6*(l_3 + l_4)**3'
+
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 1))) == 'l_1 + l_3 + l_4'
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 2))) == '2*l_1*l_3 + 2*l_1*(l_1 + l_2) + 2*l_1*(l_3 + l_4) + 2*(l_3 + l_4)**2'
+    assert str(sp.simplify(lfr._ca_kth_moment_numerator(k3, '1', '3', 3))) == '6*l_1**2*l_3 + 6*l_1*l_3*(l_1 + l_2) + 12*l_1*l_3*(l_3 + l_4) + 6*l_1*(l_1 + l_2)**2 + 6*l_1*(l_1 + l_2)*(l_3 + l_4) + 6*l_1*(l_3 + l_4)**2 + 6*(l_3 + l_4)**3'
 
 
 def test_ca_kth_moment_numerator_raises():
-    k3 = g_ops.dict_to_graph(k3_dict)
-    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
-    k3_sym_lap = ca.generate_sym_laplacian(k3, k3_edge_to_sym)
 
-    n = k3_sym_lap.rows
-    Q_n_minus_2 = ca.get_sigma_Q_k(k3_sym_lap, n-2)[1]
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+
     with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator('oops',  k3_sym_lap, Q_n_minus_2, '1', '3', 1)
+        lfr._ca_kth_moment_numerator('oops', '1', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator(k3,  'oops', Q_n_minus_2, '1', '3', 1)
+        lfr._ca_kth_moment_numerator(k3_2t, '1', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, 'oops', '1', '3', 1)
+        lfr._ca_kth_moment_numerator(k3, 'oops', '3', 1)
     with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, 'oops', '3', 1)
+        lfr._ca_kth_moment_numerator(k3, '1', 'oops', 1)
     with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', 'oops', 1)
-    with pytest.raises(NotImplementedError):
-        lfr.ca_kth_moment_numerator(k3,  k3_sym_lap, Q_n_minus_2, '1', '3', 'oops')
+        lfr._ca_kth_moment_numerator(k3, '1', '3', 'oops')
 
 
 def test_k_moment_fpt_expression_asserts():
-    k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
+    # k3_edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(k3_dict)
 
-    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 1))) == "(l_1 + l_3 + l_4)/(l_1*l_4 + l_2*l_3 + l_2*l_4)"
-    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 2))) == '2*(l_1*l_3 + l_1*(l_1 + l_2) + l_1*(l_3 + l_4) + (l_3 + l_4)**2)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**2'
-    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3_dict, k3_edge_to_sym, '1', '3', 3))) == '6*(l_1**2*l_3 + l_1*l_3*(l_1 + l_2) + 2*l_1*l_3*(l_3 + l_4) + l_1*(l_1 + l_2)**2 + l_1*(l_1 + l_2)*(l_3 + l_4) + l_1*(l_3 + l_4)**2 + (l_3 + l_4)**3)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**3'
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
 
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3, '1', '3', 1))) == "(l_1 + l_3 + l_4)/(l_1*l_4 + l_2*l_3 + l_2*l_4)"
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3, '1', '3', 2))) == '2*(l_1*l_3 + l_1*(l_1 + l_2) + l_1*(l_3 + l_4) + (l_3 + l_4)**2)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**2'
+    assert str(sp.simplify(lfr.k_moment_fpt_expression(k3, '1', '3', 3))) == '6*(l_1**2*l_3 + l_1*l_3*(l_1 + l_2) + 2*l_1*l_3*(l_3 + l_4) + l_1*(l_1 + l_2)**2 + l_1*(l_1 + l_2)*(l_3 + l_4) + l_1*(l_3 + l_4)**2 + (l_3 + l_4)**3)/(l_1*l_4 + l_2*l_3 + l_2*l_4)**3'
+
+
+def test_k_moment_fpt_expression_raises():
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+
+    with pytest.raises(NotImplementedError):
+        lfr.k_moment_fpt_expression('oops', '1', '3', 1)
+    with pytest.raises(NotImplementedError):
+        lfr.k_moment_fpt_expression(k3_2t, '1', '3', 1)
+    with pytest.raises(NotImplementedError):
+        lfr.k_moment_fpt_expression(k3, 'oops', '3', 1)
+    with pytest.raises(NotImplementedError):
+        lfr.k_moment_fpt_expression(k3, '1', 'oops', 1)
+    with pytest.raises(NotImplementedError):
+        lfr.k_moment_fpt_expression(k3, '1', '3', 'oops')
 
 def test_splitting_probability_asserts():
     edges = [
@@ -204,31 +237,29 @@ def test_splitting_probability_asserts():
         ('2', '4'),
         ('3', '5')
     ]
-    edge_to_sym = g_ops.edge_to_sym_from_edges(edges)
-    assert str(lfr.splitting_probability(edge_to_sym, ['4', '5'], '1', '5')) == '(l_1*l_4*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_7*l_8)/(l_1*l_4*l_8 + l_1*l_5*l_7 + l_1*l_6*l_7 + l_1*l_7*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_6*l_7 + l_2*l_7*l_8)'
+    graph = LinearFrameworkGraph(edges)
+    assert str(lfr.splitting_probability(graph, '1', '5')) == '(l_1*l_4*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_7*l_8)/(l_1*l_4*l_8 + l_1*l_5*l_7 + l_1*l_6*l_7 + l_1*l_7*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_6*l_7 + l_2*l_7*l_8)'
 
 
 def test_splitting_probability_raises():
-    edge_to_weight = {
-        ('1', '2'): 1,
-        ('1', '3'): 2,
-        ('2', '1'): 3,
-        ('2', '3'): 4,
-        ('3', '1'): 5,
-        ('3', '2'): 6,
-        ('2', '4'): 7,
-        ('3', '5'): 8
-    }
-    edge_to_sym = g_ops.edge_to_sym_from_edge_to_weight(edge_to_weight)
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability('oops', ['4', '5'], '1', '5')
+        lfr.splitting_probability('oops', '1', '5')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(edge_to_weight, ['4', '5'], '1', '5')
+        lfr.splitting_probability(k3, '1', '5')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(edge_to_sym, 'oops', '1', '5')
+        lfr.splitting_probability(k3_2t, 1, '5')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(edge_to_sym, [4, '5'], '1', '5')
-    with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(edge_to_sym, ['4', '5'], 1, '5')
-    with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(edge_to_sym, ['4', '5'], '1', 5)
+        lfr.splitting_probability(k3_2t, '1', 5)

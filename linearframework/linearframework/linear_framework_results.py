@@ -19,98 +19,6 @@ import linearframework.graph_operations as g_ops
 from linearframework.linear_framework_graph import LinearFrameworkGraph
 import linearframework.ca_recurrence as ca
 
-# def steady_states_from_sym_lap(edge_to_weight, edge_to_sym):
-#     """calculates the symbolic formula for the steady states of a graph from its symbolic laplacian using the first-minors MTT.
-#     This method is much faster than using Q_k matrices, since it circumvents the need for the calculation of Q_k matrices.
-
-#     Args:
-#         edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
-#         edge_to_sym (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
-
-#     Returns:
-#         list[sympy.core.mul.Mul]: list of the steady states of each vertex in the graph in canonical order
-#     """
-#     if not isinstance(edge_to_weight, dict):
-#         raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-#     for key in edge_to_weight.keys():
-#         if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-#             raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-#         if not isinstance(edge_to_weight[key], (float, int)):
-#             raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    
-#     if not isinstance(edge_to_sym, dict):
-#         raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#     for key in edge_to_sym.keys():
-#         if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#         if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-
-#     graph = g_ops.dict_to_graph(edge_to_weight)
-#     sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
-
-#     n = sym_lap.rows
-#     rhos = []
-#     for i in range(n):
-#         rho_i = sym_lap.minor(i,i)
-#         rhos.append(rho_i)
-    
-#     denominator = sum(rhos)
-
-#     nodes = list(graph.nodes)
-#     steady_states = {}
-#     for i in range(len(rhos)):
-#         steady_states[nodes[i]] = rhos[i] / denominator
-
-#     return steady_states
-
-# def steady_states_from_Q_n_minus_1(edge_to_weight, edge_to_sym):
-#     """calculates the symbolic formula for the steady states of a graph from the diagonal elements of Q_(n-1).
-#     This method is much slower than the alternative that uses the first-minors MTT.
-#     It is mostly used for testing to ensure the two outputs are equal.
-
-#     Args:
-#         edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
-#         edge_to_sym (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
-
-#     Returns:
-#         list[sympy.core.mul.Mul]: list of the steady states of each vertex in the graph in canonical order
-#     """
-#     if not isinstance(edge_to_weight, dict):
-#         raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-#     for key in edge_to_weight.keys():
-#         if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-#             raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-#         if not isinstance(edge_to_weight[key], (float, int)):
-#             raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    
-#     if not isinstance(edge_to_sym, dict):
-#         raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#     for key in edge_to_sym.keys():
-#         if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-#         if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-#             raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-
-#     graph = g_ops.dict_to_graph(edge_to_weight)
-#     sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
-
-#     n = sym_lap.rows
-#     Q_n1 = ca.get_sigma_Q_k(sym_lap, n-1)[1]
-
-#     rhos = []
-#     for i in range(n):
-#         rhos.append(Q_n1.row(i)[i])
-    
-#     denominator = sum(rhos)
-
-#     nodes = list(graph.nodes)
-#     steady_states = {}
-#     for i in range(len(rhos)):
-#         steady_states[nodes[i]] = rhos[i] / denominator
-    
-#     return steady_states
-
 
 def steady_states_from_sym_lap(graph):
     """calculates the symbolic formula for the steady states of a graph from its symbolic laplacian using the first-minors MTT.
@@ -262,12 +170,11 @@ def filter_by_forbidden_factors(forest_weight_str_list, forbidden_factor_strs):
     return filtered_forest_weights
 
 
-def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, roots, i, j):
+def sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, roots, i, j):
     """calculates the sum of the weights of the spanning forests rooted at roots, with a path from i to j
 
     Args:
-        graph (nx.DiGraph): the graph of interest
-        Lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of graph
+        graph (networkx.classes.digraph.DiGraph): networkx graph of interent
         Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-2) matrix of graph
         roots (list[str]): list of desired roots
         i (str): vertex with a required path from
@@ -276,7 +183,8 @@ def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, roots, i, j):
     Returns:
         sympy.core.add.Add: sum of the weights of the spanning forests rooted at roots, with a path from i to j
     """
-    nodes = list(graph.nodes)
+    sym_lap = graph.sym_lap
+    nodes = graph.nodes
     i_index = nodes.index(i)
     j_index = nodes.index(j)
 
@@ -286,7 +194,7 @@ def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, roots, i, j):
     for root in roots:
         root_index = nodes.index(root)
 
-        L_root = -1 * Lap.row(root_index)
+        L_root = -1 * sym_lap.row(root_index)
         L_root.col_del(root_index)
         L_j_str_list = [str(factor) for factor in list(L_root)]
         forbidden_factor_str_list.extend(L_j_str_list)
@@ -304,12 +212,11 @@ def sum_sym_weights_jq_roots_ij_path(graph, Lap, Q_n_minus_2, roots, i, j):
     return sum_sym_weights
 
 
-def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment):
+def _ca_kth_moment_numerator(graph, source, target, moment):
     """ calculates the numerator of the k-th moment of a graph using the Q_(n-2) matrix given by the CA recurrence.
 
     Args:
         graph (networkx.classes.digraph.DiGraph): networkx graph of interent
-        Lap (sympy.matrices.dense.MutableDenseMatrix): symbolic laplacian of graph
         Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-2) matrix found using the CA recurrence
         source (str): id of source vertex
         target (str): id of target vertex
@@ -318,12 +225,11 @@ def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment
     Returns:
         sympy.core.add.Add: symbolic expression for the the numerator of the moment of interest.
     """
-    if not isinstance(graph, nx.classes.digraph.DiGraph):
-        raise NotImplementedError("graph must be a networkx DiGraph")
-    if not isinstance(sym_lap, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("Lap must be a sympy matrix")
-    if not isinstance(Q_n_minus_2, sp.matrices.dense.MutableDenseMatrix):
-        raise NotImplementedError("Q_n_minus_2 must be a sympy matrix")
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+    if len(graph.terminal_nodes) > 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
@@ -331,7 +237,11 @@ def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
 
-    I = list(graph.nodes())
+    sym_lap = graph.sym_lap
+    n = sym_lap.rows
+    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
+
+    I = list(graph.nodes)
     I.remove(target)
 
     j_vecs = get_j_vecs_from_indices(I, moment)
@@ -347,7 +257,7 @@ def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment
                 j_n_1 = j_vec[u-1]
             j_n = j_vec[u]
 
-            sum_weights = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, [j_n, target], j_n_1, j_n)
+            sum_weights = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
 
             prod_inner_sums *= sum_weights
 
@@ -356,13 +266,12 @@ def ca_kth_moment_numerator(graph,  sym_lap, Q_n_minus_2, source, target, moment
     return factorial(moment) * sum_prods
 
 
-def k_moment_fpt_expression(edge_to_weight, edge_to_sym, source, target, moment):
+def k_moment_fpt_expression(graph, source, target, moment):
     """calculates the symbolic expression of the moment-th moment of the first passage time from source to target
      of the graph represented by edge_to_weight with the symbols of the edge weights being the values in edge_to_sym
 
     Args:
-        edge_to_weight (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): w} where w is some positive number
-        edge_to_sym (dict[tuple[str]: float]): dict of edges in form {('v_1', 'v_2): l} where l is some sympy symbol
+        graph (LinearFrameworkGraph): LinearFrameworkGraph with no more than one terminal vertex
         source (str): id of source vertex
         target (str): id of target vertex
         moment (int): moment of interest
@@ -370,82 +279,56 @@ def k_moment_fpt_expression(edge_to_weight, edge_to_sym, source, target, moment)
     Returns:
         sympy.core.add.Add: symbolic expression of the moment-th moment of the graph over the mean of the graph to the power of moment
     """
-    if not isinstance(edge_to_weight, dict):
-        raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_weight.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_weight[key], (float, int)):
-            raise NotImplementedError("edge_to_weight must be a dictionary in the form {('v_1, 'v_2'): w} where w is a positive number and 'v_1' and 'v_2' are the ids of vertices.")
-    
-    if not isinstance(edge_to_sym, dict):
-        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_sym.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+    if len(graph.terminal_nodes) > 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
 
-    graph = g_ops.dict_to_graph(edge_to_weight)
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
         raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
-    
-    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
-    n = sym_lap.rows
-    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-2)[1]
 
-    numerator = ca_kth_moment_numerator(graph, sym_lap, Q_n_minus_2, source, target, moment)
-    q = list(graph.nodes()).index(target)
+    numerator = _ca_kth_moment_numerator(graph, source, target, moment)
+    q = list(graph.nodes).index(target)
 
+    sym_lap = graph.sym_lap
     denominator = sym_lap.minor(q, q)
     denominator = denominator ** moment
 
     return numerator / denominator
 
 
-def splitting_probability(edge_to_sym, terminal_vertices, source, target):
+def splitting_probability(graph, source, target):
     """Calculates the splitting probability of the graph represented by edge_to_sym from source to target.
 
     Args:
-        edge_to_sym (dict[tuple[str]: sympy.core.symbol.Symbol]): dictionary with the form {('v_1', 'v_2): l_i} 
-        terminal_vertices (list[str]): list of the ids of the terminal vertices in the graph represented by edge_to_sym
+        graph (LinearFrameworkGraph): LinearFrameworkGraph with no more than one terminal vertex
         source (str): vertex id of source of splitting probability
         target (str): vertex id of target of splitting probability
 
     Returns:
         sympy.core.mul.Mul: sympy expression of splitting probability
     """
-    if not isinstance(edge_to_sym, dict):
-        raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-    for key in edge_to_sym.keys():
-        if not isinstance(key, tuple) or not isinstance(key[0], str) or not isinstance(key[1], str) or len(key) != 2:
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-        if not isinstance(edge_to_sym[key], sp.core.symbol.Symbol):
-            raise NotImplementedError("edge_to_sym must be a dictionary of edges to sympy symbols in the form {('v_1, 'v_2'): l_i} where l_i is a sympy symbol and 'v_1' and 'v_2' are the ids of vertices.")
-    if not isinstance(terminal_vertices, list):
-        raise NotImplementedError("terminal vertices must be a list of the string ids of the terminal vertices in edge_to_sym")
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
+    if len(graph.terminal_nodes) < 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with two or more terminal vertices")
+
+    if not isinstance(source, str) or source not in list(graph.nodes):
+        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
+    if not isinstance(target, str) or target not in list(graph.nodes):
+        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
     
-    graph = nx.DiGraph()
-    graph.add_edges_from(edge_to_sym.keys())
-    
-    for vertex in terminal_vertices:
-        if vertex not in list(graph.nodes()):
-            raise NotImplementedError("terminal vertices must be a list of the string ids of the terminal vertices in edge_to_sym")
-    if source not in list(graph.nodes):
-        raise NotImplementedError("source must a be a vertex of the graph represented by edge_to_sym")
-    if target not in list(graph.nodes):
-        raise NotImplementedError("target must a be a vertex of the graph represented by edge_to_sym")
-    
-    sym_lap = ca.generate_sym_laplacian(graph, edge_to_sym)
+    sym_lap = graph.sym_lap
+    terminal_vertices = graph.terminal_nodes
     n = sym_lap.rows
     m = len(terminal_vertices)
-    Q_n_minus_2 = ca.get_sigma_Q_k(sym_lap, n-m)[1]
-    denominator = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, terminal_vertices, target, target)
-    numerator = sum_sym_weights_jq_roots_ij_path(graph, sym_lap, Q_n_minus_2, terminal_vertices, source, target)
+    Q_n_minus_m = ca.get_sigma_Q_k(sym_lap, n-m)[1]
+    denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
+    numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
     return numerator / denominator
 
     
