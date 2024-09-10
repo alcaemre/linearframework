@@ -11,6 +11,7 @@ from linearframework.linear_framework_graph import LinearFrameworkGraph
 
 import pytest
 import networkx as nx
+import sympy as sp
 
 def test_init_asserts():
     k3_edges = [
@@ -56,6 +57,22 @@ def test_init_raises():
     with pytest.raises(NotImplementedError):
         LinearFrameworkGraph([('1', '2', '3')])
 
+def test_generate_random_edge_to_weight_asserts():
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+    assert k3_2t.generate_random_edge_to_weight(seed=1) == {('1', '2'): 0.3177840006884067, ('1', '3'): 20.986835607646604, ('2', '1'): 0.001001581395585897, ('2', '3'): 0.06516215458215692, ('3', '1'): 0.0075951323286823896, ('3', '2'): 0.0035812246787002297, ('2', '4'): 0.013108749615263331, ('3', '5'): 0.11840345146135145}
+
+
 def test_generate_random_edge_to_weight():
     k3_2t_edges = [
         ('1', '2'),
@@ -69,4 +86,45 @@ def test_generate_random_edge_to_weight():
     ]
 
     k3_2t = LinearFrameworkGraph(k3_2t_edges)
-    k3_2t.generate_random_edge_to_weight(seed=1) == {('1', '2'): 0.3177840006884067, ('1', '3'): 20.986835607646604, ('2', '1'): 0.001001581395585897, ('2', '3'): 0.06516215458215692, ('3', '1'): 0.0075951323286823896, ('3', '2'): 0.0035812246787002297, ('2', '4'): 0.013108749615263331, ('3', '5'): 0.11840345146135145}
+    with pytest.raises(NotImplementedError):
+        k3_2t.generate_random_edge_to_weight('oops')
+
+
+def test_make_sym_weight_asserts():
+    expected_sym_to_weight = {
+        sp.Symbol('l_1'): 1,
+        sp.Symbol('l_2'): 2,
+        sp.Symbol('l_3'): 3,
+        sp.Symbol('l_4'): 4,
+        sp.Symbol('l_5'): 5,
+        sp.Symbol('l_6'): 6
+        }
+    
+    k3_dict = {
+        ('1', '2'): 1,
+        ('1', '3'): 2,
+        ('2', '1'): 3,
+        ('2', '3'): 4,
+        ('3', '1'): 5,
+        ('3', '2'): 6,
+    }
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+    
+    assert k3.make_sym_to_weight(k3_dict) == expected_sym_to_weight
+    assert isinstance(k3.make_sym_to_weight(), dict)
+    assert len(k3.make_sym_to_weight().keys()) == len(k3_dict.keys())
+
+
+def test_make_sym_weight_raises():
+    k3_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+    ]
+    k3 = LinearFrameworkGraph(k3_edges)
+
+    with pytest.raises(NotImplementedError):
+        k3.make_sym_to_weight('oops')

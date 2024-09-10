@@ -129,7 +129,7 @@ class LinearFrameworkGraph:
             if not isinstance(edge, tuple) or len(edge) != 2:
                 raise NotImplementedError("edges must be 2-tuples of nodes in the form (v_1, v_2) for an edge from v_1 to v_2")
 
-        self.edges=edges
+        self.edges = edges
         self.edge_to_sym = _edge_to_sym_from_edges(self.edges)
         self.nodes = _nodes_from_edges(self.edges)
         self.terminal_nodes = _find_terminal_nodes(self.edges, self.nodes)
@@ -150,8 +150,35 @@ class LinearFrameworkGraph:
         Returns:
             dict[tuple[str]: float]: edges to randomly generated weights
         """
+        if not isinstance(seed, (type(None), float, int)):
+            raise NotImplementedError("seed must be a float, an int, or be left a None")
         np.random.seed(seed)
         edge_to_weight = {}
         for edge in self.edges:
             edge_to_weight[(str(edge[0]), str(edge[1]))] = 10 ** ((6 * np.random.rand()) - 3)
         return edge_to_weight
+    
+
+    def make_sym_to_weight(self, edge_to_weight=None):
+        """makes a sym_to_weight dict used for evaluating symbolic expressions at a given point.
+        That is, substituting the symbolic label on an edge for an explicit number, or a different symbol.
+        Note that the keys of edge_to_weight must be contained in self.edges.
+
+        If you just want to sample randomly, leave edge_to_weight unassigned and a random edge_to_weight dict will be generated automatically
+        with each edge weight being sampled uniformly from the range [10**(-3), 10**6].
+
+        Args:
+            edge_to_weight (dict[tuple[Any]: Any], optional): dictionary of edges pointing to their desired weights. Defaults to None.
+
+        Returns:
+            dict[sympy.symbol: Any]: dictionary relating the symbolic edge weights to their respective new weights in edge_to_weight
+        """
+        if not isinstance(edge_to_weight, (type(None), dict)):
+            raise NotImplementedError("edge_to_weight must be a dictionary of edges pointing to their desired weights")
+        if edge_to_weight == None:
+            edge_to_weight = self.generate_random_edge_to_weight()
+        
+        sym_to_weight = {}
+        for edge in edge_to_weight.keys():
+            sym_to_weight[self.edge_to_sym[edge]] = edge_to_weight[edge]
+        return sym_to_weight
