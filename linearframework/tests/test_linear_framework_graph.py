@@ -7,7 +7,7 @@ tests functionality of linear_framework_graph.py
 
 that is the ability to create objects of type LinearFrameworkGraph
 """
-from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph
+from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph, terminalize
 
 import pytest
 import networkx as nx
@@ -161,3 +161,37 @@ def test_hill_augmented_graph_asserts():
     assert str(L_augmented.edge_to_sym) == '{(1, 2): l_1, (2, 3): l_3, (3, 2): l_5, (3, 4): l_6, (4, 1): l_10 + l_11 + l_8, (4, 3): l_9, (2, 1): l_4, (3, 1): l_7}'
 
     assert L_augmented.sym_lap.shape == (4, 4)
+
+
+def test_terminalize_asserts():
+    k3_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+    ]
+    k3 = LinearFrameworkGraph(k3_edges)
+
+    assert terminalize(k3, '3').terminal_edges == [('1', '3'), ('2', '3')]
+    assert terminalize(k3, '1').terminal_edges == [('2', '1'), ('3', '1')]
+    assert terminalize(k3, '2').terminal_edges == [('1', '2'), ('3', '2')]
+
+
+
+def test_terminalize_raises():
+    k3_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+    ]
+    k3 = LinearFrameworkGraph(k3_edges)
+    
+    with pytest.raises(NotImplementedError):
+        terminalize('oops', '1')
+    with pytest.raises(NotImplementedError):
+        terminalize(k3, 'oops')

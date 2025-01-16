@@ -150,16 +150,28 @@ def hill_augmented_graph(graph, augmentation_vertex):
         return augmented_graph
 
 
-def terminalize_node(graph, terminal_node):
-    # raise errors if graph already has terminal vertices? or do I want to make it such that 
+def terminalize(graph, node):
+    """makes terminal node in graph a terminal node
+
+    Args:
+        graph (LinearFrameworkGraph): graph of interest
+        node (Any): node to make terminal
+
+    Returns:
+        LinearFrameworkGraph: a graph with node made terminal
+    """
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph")
+    if not node in graph.nodes:
+        raise NotImplementedError("terminal_node must be a node of graph")
 
     new_edge_to_sym = {}
 
     for key in graph.edge_to_sym.keys():
-        if not key[0] == terminal_node:
+        if not key[0] == node:
             new_edge_to_sym[key] = graph.edge_to_sym[key]
     
-    new_edges = list(new_edge_to_sym.keys)
+    new_edges = list(new_edge_to_sym.keys())
     terminal_graph = LinearFrameworkGraph(new_edges, edge_to_sym=new_edge_to_sym)
 
     return terminal_graph
