@@ -8,13 +8,12 @@ This is done by separately calculating the numerator and denominator of each of 
 """
 
 import sympy as sp
-import networkx as nx
 import numpy as np
 from math import factorial
 from operator import mul
 from functools import reduce
 
-from linearframework.linear_framework_graph import LinearFrameworkGraph
+from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph
 import linearframework.ca_recurrence as ca
 
 
@@ -210,6 +209,55 @@ def sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, roots, i, j):
     return sum_sym_weights
 
 
+def sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, roots, i, j):
+    """calculates the sum of the weights of the spanning forests rooted at roots, with a path from i to j
+
+    Args:
+        graph (LinearFrameworkGraph): LinearFrameworkGraph of interent
+        Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-m) matrix of graph
+        roots (list[str]): list of desired roots
+        i (str): vertex with a required path from
+        j (str): vertex with a required path to
+
+    Returns:
+        sympy.core.add.Add: sum of the weights of the spanning forests rooted at roots, with a path from i to j
+    """
+    if not j in roots:
+        raise NotImplementedError("j must be in roots")
+    
+    nodes = graph.nodes
+    
+    # find Phi_ij as a set
+    i_index = nodes.index(i)
+    j_index = nodes.index(j)
+    Q_ij = Q_n_minus_m.row(i_index)[j_index]
+    expanded_Q_ij = sp.expand(Q_ij)
+    expanded_Q_ij_str = str(expanded_Q_ij)
+    expanded_Q_ij_str_list = expanded_Q_ij_str.split(' + ')
+    Phi_i_leadsto_j = set(expanded_Q_ij_str_list)
+
+    # find all Phi_z as a list of sets
+    Phis_roots = []
+    for root in roots:
+        root_index = nodes.index(root)
+        Q_root_root = Q_n_minus_m.row(root_index)[root_index]
+        expanded_Q_root_root = sp.expand(Q_root_root)
+        expanded_Q_root_root_str = str(expanded_Q_root_root)
+        expanded_Q_root_root_list = expanded_Q_root_root_str.split(" + ")
+        Phi_root = set(expanded_Q_root_root_list)
+        Phis_roots.append(Phi_root)
+    
+    # take the intersection of all of these sets
+    Phi_roots = set.intersection(*Phis_roots)
+    Phis_roots_ij = Phi_roots.intersection(Phi_i_leadsto_j)
+    Phis_roots_ij_list = list(Phis_roots_ij)
+
+    filtered_simplified_Q_ij_sym_list = forest_weight_string_list_to_forest_weight_sym(Phis_roots_ij_list)
+
+    sum_sym_weights = sum(filtered_simplified_Q_ij_sym_list)
+    return sum_sym_weights
+
+
 def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
     """ calculates the numerator of the k-th moment of a graph using the Q_(n-2) matrix given by the CA recurrence.
 
@@ -254,6 +302,7 @@ def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
             j_n = j_vec[u]
 
             sum_weights = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
+            # sum_weights = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
 
             prod_inner_sums *= sum_weights
 
@@ -301,7 +350,39 @@ def k_moment_fpt_expression(graph, source, target, moment):
     return numerator / denominator
 
 
-def splitting_probability(graph, source, target):
+def splitting_probability_ca(graph, source, target):
+    """Calculates the splitting probability of the graph represented by edge_to_sym from source to target.
+
+    Args:
+        graph (LinearFrameworkGraph): LinearFrameworkGraph with no more than one terminal vertex
+        source (str): vertex id of source of splitting probability
+        target (str): vertex id of target of splitting probability
+
+    Returns:
+        sympy.core.mul.Mul: sympy expression of splitting probability
+    """
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with at least one terminal vertex")
+    if len(graph.terminal_nodes) < 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with two or more terminal vertices")
+    if not isinstance(source, str) or source not in list(graph.nodes):
+        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
+    if not isinstance(target, str) or target not in list(graph.nodes):
+        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
+    
+    sym_lap = graph.sym_lap
+    terminal_vertices = graph.terminal_nodes
+    n = sym_lap.rows
+    m = len(terminal_vertices)
+    Q_n_minus_m = ca.get_sigma_Q_k(sym_lap, n-m)[1]
+    denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
+    numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
+    # denominator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, target, target)
+    # numerator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, source, target)
+    return numerator / denominator
+
+
+def splitting_probability_intersection(graph, source, target):
     """Calculates the splitting probability of the graph represented by edge_to_sym from source to target.
 
     Args:
@@ -316,7 +397,6 @@ def splitting_probability(graph, source, target):
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
     if len(graph.terminal_nodes) < 1:
         raise NotImplementedError("graph must be a LinearFrameworkGraph with two or more terminal vertices")
-
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
@@ -327,8 +407,70 @@ def splitting_probability(graph, source, target):
     n = sym_lap.rows
     m = len(terminal_vertices)
     Q_n_minus_m = ca.get_sigma_Q_k(sym_lap, n-m)[1]
-    denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
-    numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
+    # denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
+    # numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
+    denominator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, target, target)
+    numerator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, source, target)
     return numerator / denominator
 
     
+# METHODS USING HILL-AUGMENTED GRAPHS
+
+def sum_terminal_edge_rho_augmented_graph(graph, target_node, augmentation_node):
+    """Iterates over all terminal edges in graph which lead to target node.
+    For each terminal edge leading to the target nodes, takes the product of the the weight of the terminal edge
+    and the weight of the sum of the spanning forests of the Hill-augmentation of graph to augmentation node 
+    rooted at the vertex leading to the target node in the terminal edge.
+    Then returns the sum over this product for all terminal edges
+
+    Args:
+        graph (LinearFrameworkGraph): graph of interest
+        target_node (Any): target node id, must be a terminal node of graph
+        augmentation_node (Any): node with which we are Hill-augmenting to
+
+    Returns:
+        sympy.core.add.Add: expression calculated
+    """
+    terminal_edges_to_target_node = []
+    for terminal_edge in graph.terminal_edges:
+        if terminal_edge[1] == target_node:
+            terminal_edges_to_target_node.append(terminal_edge)
+        
+    augmented_graph = hill_augmented_graph(graph, augmentation_node)
+
+    sum_weights = 0
+    for terminal_edge in terminal_edges_to_target_node:
+        j = augmented_graph.nodes.index(terminal_edge[0])
+        augmented_graph_rho_j = augmented_graph.sym_lap.minor(j, j)
+        sum_weights += graph.edge_to_sym[terminal_edge] * augmented_graph_rho_j
+    
+    return sum_weights
+
+
+def hill_splitting_probability(graph, source, target):
+    """Uses Hill-augmentation to calculate the splitting probability of reaching target from source on graph
+
+    Args:
+        graph (LinearFrameworkGraph): graph of interest, must have at least one terminal vertex
+        source (Any): source vertex of graph
+        target (Any): target vertex of graph
+
+    Returns:
+        sympy.core.mul.Mul: symbolic expression of splitting probability
+    """
+    if not isinstance(graph, LinearFrameworkGraph):
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with at least one terminal vertex")
+    if len(graph.terminal_nodes) < 1:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with at least one terminal vertex")
+    if not isinstance(source, str) or source not in list(graph.nodes):
+        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
+    if not isinstance(target, str) or target not in list(graph.nodes):
+        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
+
+    numerator = sum_terminal_edge_rho_augmented_graph(graph, target, source)
+
+    denominator = 0
+    for terminal_node in graph.terminal_nodes:
+        denominator += sum_terminal_edge_rho_augmented_graph(graph, terminal_node, source)
+    
+    return numerator / denominator

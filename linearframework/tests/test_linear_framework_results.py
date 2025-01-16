@@ -232,7 +232,7 @@ def test_k_moment_fpt_expression_raises():
     with pytest.raises(NotImplementedError):
         lfr.k_moment_fpt_expression(k3, '1', '3', 'oops')
 
-def test_splitting_probability_asserts():
+def test_splitting_probability_ca_asserts():
     edges = [
         ('1', '2'),
         ('1', '3'),
@@ -244,10 +244,10 @@ def test_splitting_probability_asserts():
         ('3', '5')
     ]
     graph = LinearFrameworkGraph(edges)
-    assert str(lfr.splitting_probability(graph, '1', '5')) == '(l_1*l_4*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_7*l_8)/(l_1*l_4*l_8 + l_1*l_5*l_7 + l_1*l_6*l_7 + l_1*l_7*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_6*l_7 + l_2*l_7*l_8)'
+    assert str(lfr.splitting_probability_ca(graph, '1', '5')) == '(l_1*l_4*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_7*l_8)/(l_1*l_4*l_8 + l_1*l_5*l_7 + l_1*l_6*l_7 + l_1*l_7*l_8 + l_2*l_3*l_8 + l_2*l_4*l_8 + l_2*l_6*l_7 + l_2*l_7*l_8)'
 
 
-def test_splitting_probability_raises():
+def test_splitting_probability_ca_raises():
     k3 = LinearFrameworkGraph(list(k3_dict.keys()))
 
     k3_2t_edges = [
@@ -262,10 +262,54 @@ def test_splitting_probability_raises():
     ]
     k3_2t = LinearFrameworkGraph(k3_2t_edges)
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability('oops', '1', '5')
+        lfr.splitting_probability_ca('oops', '1', '5')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(k3, '1', '5')
+        lfr.splitting_probability_ca(k3, '1', '3')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(k3_2t, 1, '5')
+        lfr.splitting_probability_ca(k3, '1', '5')
     with pytest.raises(NotImplementedError):
-        lfr.splitting_probability(k3_2t, '1', 5)
+        lfr.splitting_probability_ca(k3_2t, 1, '5')
+    with pytest.raises(NotImplementedError):
+        lfr.splitting_probability_ca(k3_2t, '1', 5)
+
+
+def test_hill_splitting_probability_asserts():
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+    assert sp.expand(lfr.splitting_probability_ca(k3_2t, '1', '5') - lfr.hill_splitting_probability(k3_2t, '1', '5')) == 0
+
+
+
+def test_hill_splitting_probability_raises():
+    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
+
+    k3_2t_edges = [
+        ('1', '2'),
+        ('1', '3'),
+        ('2', '1'),
+        ('2', '3'),
+        ('3', '1'),
+        ('3', '2'),
+        ('2', '4'),
+        ('3', '5')
+    ]
+    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+    with pytest.raises(NotImplementedError):
+        lfr.hill_splitting_probability('oops', '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.hill_splitting_probability(k3, '1', '3')
+    with pytest.raises(NotImplementedError):
+        lfr.hill_splitting_probability(k3, '1', '5')
+    with pytest.raises(NotImplementedError):
+        lfr.hill_splitting_probability(k3_2t, 1, '5')
+    with pytest.raises(NotImplementedError):
+        lfr.hill_splitting_probability(k3_2t, '1', 5)

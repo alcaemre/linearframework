@@ -7,7 +7,7 @@ tests functionality of linear_framework_graph.py
 
 that is the ability to create objects of type LinearFrameworkGraph
 """
-from linearframework.linear_framework_graph import LinearFrameworkGraph
+from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph
 
 import pytest
 import networkx as nx
@@ -27,6 +27,7 @@ def test_init_asserts():
     assert k3.nodes == ['1', '2', '3']
     assert k3.edges == k3_edges
     assert k3.terminal_nodes == []
+    assert k3.terminal_edges == []
     assert str(k3.edge_to_sym) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6}"
     assert str(k3.sym_lap) == 'Matrix([[l_1 + l_2, -l_1, -l_2], [-l_3, l_3 + l_4, -l_4], [-l_5, -l_6, l_5 + l_6]])'
     assert isinstance(k3.nx_graph, nx.classes.digraph.DiGraph)
@@ -46,6 +47,7 @@ def test_init_asserts():
     assert k3_2t.nodes == ['1', '2', '3', '4', '5']
     assert k3_2t.edges == k3_2t_edges
     assert k3_2t.terminal_nodes == ['4', '5']
+    assert k3_2t.terminal_edges == [('2', '4'), ('3', '5')]
     assert str(k3_2t.edge_to_sym) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6, ('2', '4'): l_7, ('3', '5'): l_8}"
     assert str(k3_2t.sym_lap) == 'Matrix([[l_1 + l_2, -l_1, -l_2, 0, 0], [-l_3, l_3 + l_4 + l_7, -l_4, -l_7, 0], [-l_5, -l_6, l_5 + l_6 + l_8, 0, -l_8], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])'
 
@@ -128,3 +130,34 @@ def test_make_sym_weight_raises():
 
     with pytest.raises(NotImplementedError):
         k3.make_sym_to_weight('oops')
+
+
+def test_hill_augmented_graph_asserts():
+    K_edges = [
+        (1, 2), (1, 6),
+        (2, 1), (2, 3),
+        (3, 4), (3, 6),
+        (4, 2), (4, 5), (4, 6),
+        (5, 1), (5, 2), (5, 6)
+    ]
+    K = LinearFrameworkGraph(K_edges)
+
+    K_augmented = hill_augmented_graph(K, 1)
+
+    assert str(K_augmented.edge_to_sym) == '{(1, 2): l_1, (2, 1): l_3, (2, 3): l_4, (3, 4): l_5, (4, 2): l_7, (4, 5): l_8, (5, 1): l_10 + l_12, (5, 2): l_11, (3, 1): l_6, (4, 1): l_9}'
+
+    assert K_augmented.sym_lap.shape == (5, 5)
+
+    L_edges = [
+        (1, 2), (1, 6),
+        (2, 3), (2, 5), 
+        (3, 2), (3, 4), (3, 6),
+        (4, 1), (4, 3), (4, 5), (4, 6)
+    ]
+    L = LinearFrameworkGraph(L_edges)
+
+    L_augmented = hill_augmented_graph(L, 1)
+
+    assert str(L_augmented.edge_to_sym) == '{(1, 2): l_1, (2, 3): l_3, (3, 2): l_5, (3, 4): l_6, (4, 1): l_10 + l_11 + l_8, (4, 3): l_9, (2, 1): l_4, (3, 1): l_7}'
+
+    assert L_augmented.sym_lap.shape == (4, 4)

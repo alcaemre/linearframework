@@ -72,6 +72,15 @@ def _find_terminal_nodes(edges, nodes):
     return terminal_vertices
 
 
+def _find_terminal_edges(edges, terminal_nodes):
+    terminal_edges = []
+    for edge in edges:
+        if edge[1] in terminal_nodes:
+            terminal_edges.append(edge)
+
+    return terminal_edges
+
+
 def _generate_sym_laplacian(edge_to_sym, nodes):
     """given an edge_to_sym dictionary, generates the appropriate Laplacian matrix
 
@@ -98,6 +107,63 @@ def _generate_sym_laplacian(edge_to_sym, nodes):
     return sp.Matrix(sym_lap)
 
 
+def _hill_augmented_edge_to_sym(graph, augmentation_vertex):
+        """makes the edge_to_sym dictionary the Hill augmentation to vertex i of graph self.
+
+        Args:
+            augmentation_vertex (str): vertex to which we are performing a Hill-augmentation to.
+
+        Returns:
+            dict: edge_to_sym dictionary of self Hill-augmented to vertex i
+        """
+        hill_edge_to_sym = {}
+        terminal_edges = []
+        for edge in graph.edges:
+            if edge[1] not in graph.terminal_nodes:
+                hill_edge_to_sym[edge] = graph.edge_to_sym[edge]
+            else:
+                terminal_edges.append(edge)
+
+        for terminal_edge in terminal_edges:
+            new_hill_edge = (terminal_edge[0], augmentation_vertex)
+            if new_hill_edge not in hill_edge_to_sym.keys() and new_hill_edge[0] != new_hill_edge[1]:
+                hill_edge_to_sym[new_hill_edge] = graph.edge_to_sym[terminal_edge]
+            elif new_hill_edge[0] != new_hill_edge[1]:
+                hill_edge_to_sym[new_hill_edge] += graph.edge_to_sym[terminal_edge]
+        
+        return hill_edge_to_sym
+    
+
+def hill_augmented_graph(graph, augmentation_vertex):
+        """makes a LinearLrameworkGraph object representing a Hill augmented graph of self with superscript i.
+        That is, any terminal edges are redirected into vertex i
+
+        Args:
+            i (Any): vertex id of desired vertex of augmentation
+
+        Returns:
+            LinearFrameworkGraph: hill augmented graph of self with superscript i
+        """
+
+        augmented_edge_to_sym = _hill_augmented_edge_to_sym(graph, augmentation_vertex)
+        augmented_graph = LinearFrameworkGraph(list(augmented_edge_to_sym.keys()), augmented_edge_to_sym)
+        return augmented_graph
+
+
+def terminalize_node(graph, terminal_node):
+    # raise errors if graph already has terminal vertices? or do I want to make it such that 
+
+    new_edge_to_sym = {}
+
+    for key in graph.edge_to_sym.keys():
+        if not key[0] == terminal_node:
+            new_edge_to_sym[key] = graph.edge_to_sym[key]
+    
+    new_edges = list(new_edge_to_sym.keys)
+    terminal_graph = LinearFrameworkGraph(new_edges, edge_to_sym=new_edge_to_sym)
+
+    return terminal_graph
+
 class LinearFrameworkGraph:
     """
     datatype for calculating symbolic expressions of linear framework results on directed, weighted graphs.
@@ -111,18 +177,24 @@ class LinearFrameworkGraph:
         self.sym_lap: symbolic laplacian generated from edges_to_symbolic_weights
 
     methods:
-        self.
+        self.generate_random_edge_to_weight()
+        self.make_sym_to_weight()
+        self.hill_augmented_graph
 
     """
-    def __init__(self, edges):
-        """initialized a LinearFrameworkGraph
-        The input must be a list of tuples with 2 elements.
+    def __init__(self, edges, edge_to_sym=None):
+        """initializes a LinearFrameworkGraph
+        The input can be a list of tuples with 2 elements (edges).
         Each element in these tuples represents a vertex in the graph
         and two appearing in a tuple as ('v_1', 'v_2') represents vertex 'v_1' having an edge to 'v_2'.
+        There is also an option to explicitly provide the edge to sym dictionary, 
+        but this is mostly for the creation of Hill-augmented graphs rather than explicitly making graphs.
 
         Args:
             edges (lsit[tuple[Any]]): list of edges
         """
+        if isinstance(edges, type(None)) and isinstance(edge_to_sym, type(None)):
+            raise NotImplementedError("edges and edge_to_sym cannot both be None")
         if not isinstance(edges, list):
             raise NotImplementedError('edges must be a list of tuples with two elements')
         for edge in edges:
@@ -130,9 +202,15 @@ class LinearFrameworkGraph:
                 raise NotImplementedError("edges must be 2-tuples of nodes in the form (v_1, v_2) for an edge from v_1 to v_2")
 
         self.edges = edges
-        self.edge_to_sym = _edge_to_sym_from_edges(self.edges)
+
+        if edge_to_sym is not None:
+            self.edge_to_sym = edge_to_sym
+        else:
+            self.edge_to_sym = _edge_to_sym_from_edges(self.edges)
+
         self.nodes = _nodes_from_edges(self.edges)
         self.terminal_nodes = _find_terminal_nodes(self.edges, self.nodes)
+        self.terminal_edges = _find_terminal_edges(self.edges, self.terminal_nodes)
 
         self.sym_lap = _generate_sym_laplacian(self.edge_to_sym, self.nodes)
 
@@ -182,3 +260,5 @@ class LinearFrameworkGraph:
         for edge in edge_to_weight.keys():
             sym_to_weight[self.edge_to_sym[edge]] = edge_to_weight[edge]
         return sym_to_weight
+
+
