@@ -16,24 +16,26 @@ Note that this requires networkx-3.3, which is not the default install from cond
 A good way to check that the installation is complete is to run the command `pytest .` from within the repo with the environment `linearframework` active.
 The output should read 
 
-`==================================== test session starts =====================================`
+`================================================= test session starts ==================================================`
 
 `platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.0.0`
 
-`rootdir: /your/path/here/linearframework`
+`rootdir: /Users/emrealca/Documents/Gunawardena/linearframework_pkg/linearframework`
 
-`collected 29 items`
+`plugins: hypothesis-6.111.0`
 
-`tests/test_ca_recurrence.py ......                                                     [ 20%]`
+`collected 29 items                                                                                                     `
 
-`tests/test_gen_graphs.py ....                                                          [ 34%]`
+`tests/test_ca_recurrence.py ..                                                                                   [  6%]`
 
-`tests/test_generalized_aldous_schepp.py ...                                            [ 44%]`
+`tests/test_gen_graphs.py ....                                                                                    [ 20%]`
 
-`tests/test_graph_operations.py .........                                               [ 75%]`
+`tests/test_generalized_aldous_schepp.py ...                                                                      [ 31%]`
 
-`tests/test_linear_framework_results.py .......                                         [100%]`
+`tests/test_linear_framework_graph.py .........                                                                   [ 62%]`
 
-`==================================== 29 passed in 24.87s =====================================`
+`tests/test_linear_framework_results.py ...........                                                               [100%]`
 
-Now you can read tutorial.ipynb to get going!
+`================================================== 29 passed in 7.25s ==================================================`
+
+Now you can read Graph Tutorial.ipynb and Steady-State and Transient Quantities Workshop.ipynb to get going!
