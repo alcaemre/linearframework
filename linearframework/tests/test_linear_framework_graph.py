@@ -10,7 +10,6 @@ that is the ability to create objects of type LinearFrameworkGraph
 from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph, terminalize
 
 import pytest
-import networkx as nx
 import sympy as sp
 
 def test_init_asserts():
@@ -30,7 +29,6 @@ def test_init_asserts():
     assert k3.terminal_edges == []
     assert str(k3.edge_to_sym) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6}"
     assert str(k3.sym_lap) == 'Matrix([[l_1 + l_2, -l_1, -l_2], [-l_3, l_3 + l_4, -l_4], [-l_5, -l_6, l_5 + l_6]])'
-    assert isinstance(k3.nx_graph, nx.classes.digraph.DiGraph)
 
     k3_2t_edges = [
         ('1', '2'),

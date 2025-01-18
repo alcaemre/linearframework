@@ -4,10 +4,7 @@ title: ca_recurrence.py
 date: 2024-08-08 12:31:08
 """
 
-import networkx as nx
 import sympy as sp
-import numpy as np
-
 
 def sigma_kpo(L, Q_k, k):
     """given some symbolic laplacian L, some matrix Q_k previously calculated by the CA recurrence, and the k,

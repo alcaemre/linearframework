@@ -6,8 +6,6 @@ date: 2024-08-17 19:41:51
 This page holds tests for the generation of butterfly graphs.
 """
 
-
-import networkx as nx
 import numpy as np
 from linearframework.gen_graphs import gen_core_butterfly_dict, gen_erlang_process_dict
 import pytest

@@ -7,7 +7,6 @@ contains central functions related to the numerical exploration of the generaliz
 """
 
 import sympy as sp
-import networkx as nx
 import numpy as np
 from math import factorial
 

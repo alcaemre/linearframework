@@ -6,7 +6,6 @@ date: 2024-09-07 14:03:54
 holds functions relevant to the creation and use of LinearFrameworkGraph objects
 """
 
-import networkx as nx
 import sympy as sp
 import numpy as np
 
@@ -135,7 +134,7 @@ def _hill_augmented_edge_to_sym(graph, augmentation_vertex):
     
 
 def hill_augmented_graph(graph, augmentation_vertex):
-        """makes a LinearLrameworkGraph object representing a Hill augmented graph of self with superscript i.
+        """makes a LinearFrameworkGraph object representing a Hill augmented graph of self with superscript i.
         That is, any terminal edges are redirected into vertex i
 
         Args:
@@ -203,7 +202,7 @@ class LinearFrameworkGraph:
         but this is mostly for the creation of Hill-augmented graphs rather than explicitly making graphs.
 
         Args:
-            edges (lsit[tuple[Any]]): list of edges
+            edges (list[tuple[Any]]): list of edges
         """
         if isinstance(edges, type(None)) and isinstance(edge_to_sym, type(None)):
             raise NotImplementedError("edges and edge_to_sym cannot both be None")
@@ -225,9 +224,6 @@ class LinearFrameworkGraph:
         self.terminal_edges = _find_terminal_edges(self.edges, self.terminal_nodes)
 
         self.sym_lap = _generate_sym_laplacian(self.edge_to_sym, self.nodes)
-
-        self.nx_graph = nx.DiGraph()
-        self.nx_graph.add_edges_from(edges)
 
     def generate_random_edge_to_weight(self, seed=None):
         """given a list (or other iterable) of edges in the form ('v_1', 'v_2'),

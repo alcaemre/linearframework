@@ -7,7 +7,6 @@ This document tests the functions in linear_framework_results.py
 """
 
 import pytest
-import networkx as nx
 import sympy as sp
 import numpy as np
 

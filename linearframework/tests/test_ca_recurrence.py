@@ -8,7 +8,6 @@ includes tests for
 
 import pytest
 import sympy as sp
-import networkx as nx
 import numpy as np
 
 from linearframework.linear_framework_graph import LinearFrameworkGraph
