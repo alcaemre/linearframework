@@ -13,7 +13,7 @@ from math import factorial
 from operator import mul
 from functools import reduce
 
-from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph
+from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph, terminalize
 import linearframework.ca_recurrence as ca
 
 
@@ -142,122 +142,6 @@ def forest_weight_string_list_to_forest_weight_sym(forest_weight_string_list):
     return forest_weight_sym_list
 
 
-def filter_by_forbidden_factors(forest_weight_str_list, forbidden_factor_strs):
-    """we want the sum of the weights of the spanning forests with a certain set of roots and a certain path. 
-    The elements of the Q_k matrix are sums of weights of spanning forests with a certain path, but are
-    ambivalent to roots. So we need to filter to only include the sums of the weights of the spanning forests
-    that do not contain the outgoing edges of our desired roots.
-
-    Args:
-        forest_weight_str_list (list[str]): list of strings of symbolic forest weights
-        forbidden_factor_strs (list[str]): list of the symbolic weights of the outgoing edges of roots
-
-    Returns:
-        list[str]: list of permitted spanning forest weights
-    """
-    filtered_forest_weights = []
-    for forest_weight_str in forest_weight_str_list:
-        edge_weights = forest_weight_str.split('*')
-        permitted = True
-        for edge_weight in edge_weights:
-            if edge_weight in forbidden_factor_strs:
-                permitted = False
-        if permitted:
-            filtered_forest_weights.append(forest_weight_str)
-    return filtered_forest_weights
-
-
-def sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, roots, i, j):
-    """calculates the sum of the weights of the spanning forests rooted at roots, with a path from i to j
-
-    Args:
-        graph (networkx.classes.digraph.DiGraph): networkx graph of interent
-        Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-2) matrix of graph
-        roots (list[str]): list of desired roots
-        i (str): vertex with a required path from
-        j (str): vertex with a required path to
-
-    Returns:
-        sympy.core.add.Add: sum of the weights of the spanning forests rooted at roots, with a path from i to j
-    """
-    sym_lap = graph.sym_lap
-    nodes = graph.nodes
-    i_index = nodes.index(i)
-    j_index = nodes.index(j)
-
-    # finding the factors to throw out--the weights of edges outgoing from our roots j, q
-    forbidden_factor_str_list = []
-
-    for root in roots:
-        root_index = nodes.index(root)
-
-        L_root = -1 * sym_lap.row(root_index)
-        L_root.col_del(root_index)
-        L_j_str_list = [str(factor) for factor in list(L_root)]
-        forbidden_factor_str_list.extend(L_j_str_list)
-
-    Q_ij = Q_n_minus_2.row(i_index)[j_index]
-    expanded_Q_ij = sp.expand(Q_ij)
-    expanded_Q_ij_str = str(expanded_Q_ij)
-    expanded_Q_ij_str_list = expanded_Q_ij_str.split(' + ')
-
-    filtered_simplified_Q_ij_str_list = filter_by_forbidden_factors(expanded_Q_ij_str_list, forbidden_factor_str_list)
-
-    filtered_simplified_Q_ij_sym_list = forest_weight_string_list_to_forest_weight_sym(filtered_simplified_Q_ij_str_list)
-
-    sum_sym_weights = sum(filtered_simplified_Q_ij_sym_list)
-    return sum_sym_weights
-
-
-def sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, roots, i, j):
-    """calculates the sum of the weights of the spanning forests rooted at roots, with a path from i to j
-
-    Args:
-        graph (LinearFrameworkGraph): LinearFrameworkGraph of interent
-        Q_n_minus_2 (sympy.matrices.dense.MutableDenseMatrix): Q_(n-m) matrix of graph
-        roots (list[str]): list of desired roots
-        i (str): vertex with a required path from
-        j (str): vertex with a required path to
-
-    Returns:
-        sympy.core.add.Add: sum of the weights of the spanning forests rooted at roots, with a path from i to j
-    """
-    if not j in roots:
-        raise NotImplementedError("j must be in roots")
-    
-    nodes = graph.nodes
-    
-    # find Phi_ij as a set
-    i_index = nodes.index(i)
-    j_index = nodes.index(j)
-    Q_ij = Q_n_minus_m.row(i_index)[j_index]
-    expanded_Q_ij = sp.expand(Q_ij)
-    expanded_Q_ij_str = str(expanded_Q_ij)
-    expanded_Q_ij_str_list = expanded_Q_ij_str.split(' + ')
-    Phi_i_leadsto_j = set(expanded_Q_ij_str_list)
-
-    # find all Phi_z as a list of sets
-    Phis_roots = []
-    for root in roots:
-        root_index = nodes.index(root)
-        Q_root_root = Q_n_minus_m.row(root_index)[root_index]
-        expanded_Q_root_root = sp.expand(Q_root_root)
-        expanded_Q_root_root_str = str(expanded_Q_root_root)
-        expanded_Q_root_root_list = expanded_Q_root_root_str.split(" + ")
-        Phi_root = set(expanded_Q_root_root_list)
-        Phis_roots.append(Phi_root)
-    
-    # take the intersection of all of these sets
-    Phi_roots = set.intersection(*Phis_roots)
-    Phis_roots_ij = Phi_roots.intersection(Phi_i_leadsto_j)
-    Phis_roots_ij_list = list(Phis_roots_ij)
-
-    filtered_simplified_Q_ij_sym_list = forest_weight_string_list_to_forest_weight_sym(Phis_roots_ij_list)
-
-    sum_sym_weights = sum(filtered_simplified_Q_ij_sym_list)
-    return sum_sym_weights
-
-
 def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
     """ calculates the numerator of the k-th moment of a graph using the Q_(n-2) matrix given by the CA recurrence.
 
@@ -301,8 +185,12 @@ def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
                 j_n_1 = j_vec[u-1]
             j_n = j_vec[u]
 
-            sum_weights = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
+            jn1_index = graph.nodes.index(j_n_1)
+            jn_index = graph.nodes.index(j_n)
+
+            # sum_weights = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
             # sum_weights = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_2, [j_n, target], j_n_1, j_n)
+            sum_weights = Q_n_minus_2.row(jn1_index)[jn_index]
 
             prod_inner_sums *= sum_weights
 
@@ -326,15 +214,16 @@ def k_moment_fpt_expression(graph, source, target, moment):
     """
     if not isinstance(graph, LinearFrameworkGraph):
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
-    if len(graph.terminal_nodes) > 1:
-        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
-
+    if not len(graph.terminal_nodes) == 0:
+        raise NotImplementedError("graph must be a LinearFrameworkGraph with no terminal vertices")
     if not isinstance(source, str) or source not in list(graph.nodes):
         raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
     if not isinstance(target, str) or target not in list(graph.nodes):
         raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
+
+    graph = terminalize(graph, target)
 
     sym_lap = graph.sym_lap
     n = sym_lap.rows
@@ -372,45 +261,15 @@ def splitting_probability_ca(graph, source, target):
     
     sym_lap = graph.sym_lap
     terminal_vertices = graph.terminal_nodes
+    source_index = graph.nodes.index(source)
+    target_index = graph.nodes.index(target)
+
     n = sym_lap.rows
     m = len(terminal_vertices)
     Q_n_minus_m = ca.get_sigma_Q_k(sym_lap, n-m)[1]
-    denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
-    numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
-    # denominator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, target, target)
-    # numerator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, source, target)
-    return numerator / denominator
+    denominator = Q_n_minus_m.row(target_index)[target_index]
+    numerator = Q_n_minus_m.row(source_index)[target_index]
 
-
-def splitting_probability_intersection(graph, source, target):
-    """Calculates the splitting probability of the graph represented by edge_to_sym from source to target.
-
-    Args:
-        graph (LinearFrameworkGraph): LinearFrameworkGraph with no more than one terminal vertex
-        source (str): vertex id of source of splitting probability
-        target (str): vertex id of target of splitting probability
-
-    Returns:
-        sympy.core.mul.Mul: sympy expression of splitting probability
-    """
-    if not isinstance(graph, LinearFrameworkGraph):
-        raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
-    if len(graph.terminal_nodes) < 1:
-        raise NotImplementedError("graph must be a LinearFrameworkGraph with two or more terminal vertices")
-    if not isinstance(source, str) or source not in list(graph.nodes):
-        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
-    if not isinstance(target, str) or target not in list(graph.nodes):
-        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
-    
-    sym_lap = graph.sym_lap
-    terminal_vertices = graph.terminal_nodes
-    n = sym_lap.rows
-    m = len(terminal_vertices)
-    Q_n_minus_m = ca.get_sigma_Q_k(sym_lap, n-m)[1]
-    # denominator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, target, target)
-    # numerator = sum_sym_weights_jq_roots_ij_path(graph, Q_n_minus_m, terminal_vertices, source, target)
-    denominator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, target, target)
-    numerator = sum_sym_weights_roots_ij_path_from_intersection(graph, Q_n_minus_m, terminal_vertices, source, target)
     return numerator / denominator
 
     
