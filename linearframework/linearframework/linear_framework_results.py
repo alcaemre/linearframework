@@ -162,10 +162,10 @@ def _ca_kth_moment_numerator(graph, Q_n_minus_2, source, target, moment):
     if not isinstance(Q_n_minus_2, sp.matrices.dense.MutableDenseMatrix):
         raise NotImplementedError("Q_n_minus_2 must be a sympy matrix, and a Q_(n-2) matrix")
 
-    if not isinstance(source, str) or source not in list(graph.nodes):
-        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
-    if not isinstance(target, str) or target not in list(graph.nodes):
-        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
+    if source not in list(graph.nodes):
+        raise NotImplementedError("source must be an id of a vertex in graph")
+    if target not in list(graph.nodes):
+        raise NotImplementedError("target must be an id of a vertex in graph")
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
 
@@ -216,10 +216,10 @@ def k_moment_fpt_expression(graph, source, target, moment):
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no more than one terminal vertex")
     if not len(graph.terminal_nodes) == 0:
         raise NotImplementedError("graph must be a LinearFrameworkGraph with no terminal vertices")
-    if not isinstance(source, str) or source not in list(graph.nodes):
-        raise NotImplementedError("source must be a string and must be the id of a vertex in graph")
-    if not isinstance(target, str) or target not in list(graph.nodes):
-        raise NotImplementedError("target must be a string and must be the id of a vertex in graph")
+    if source not in list(graph.nodes):
+        raise NotImplementedError("source must be an id of a vertex in graph")
+    if target not in list(graph.nodes):
+        raise NotImplementedError("target must be an id of a vertex in graph")
     if not isinstance(moment, int) or moment <= 0:
         raise NotImplementedError("moment must be a natural number")
 

@@ -234,14 +234,14 @@ class LinearFrameworkGraph:
             seed (int, float): seed of random process
 
         Returns:
-            dict[tuple[str]: float]: edges to randomly generated weights
+            dict[tuple[Any]: float]: edges to randomly generated weights
         """
         if not isinstance(seed, (type(None), float, int)):
             raise NotImplementedError("seed must be a float, an int, or be left a None")
         np.random.seed(seed)
         edge_to_weight = {}
         for edge in self.edges:
-            edge_to_weight[(str(edge[0]), str(edge[1]))] = 10 ** ((6 * np.random.rand()) - 3)
+            edge_to_weight[(edge[0], edge[1])] = 10 ** ((6 * np.random.rand()) - 3)
         return edge_to_weight
     
 

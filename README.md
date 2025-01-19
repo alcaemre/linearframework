@@ -38,4 +38,4 @@ The output should read
 
 `================================================== 29 passed in 7.25s ==================================================`
 
-Now you can read Graph Tutorial.ipynb and Steady-State and Transient Quantities Workshop.ipynb to get going!
+Now you can read the tutorials in the `tutorials` folder to get going!
