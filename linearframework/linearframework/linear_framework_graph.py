@@ -103,7 +103,7 @@ def _generate_sym_laplacian(edge_to_sym, nodes):
         sym_lap[i][j] = -edge_to_sym[edge]
         sym_lap[i][i] = sym_lap[i][i] + (- sym_lap[i][j])
 
-    return sp.Matrix(sym_lap)
+    return - sp.Matrix(sym_lap).T
 
 
 def _hill_augmented_edge_to_sym(graph, augmentation_vertex):
