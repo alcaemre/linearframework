@@ -6,27 +6,7 @@ date: 2024-09-07 14:03:54
 holds functions relevant to the creation and use of LinearFrameworkGraph objects
 """
 
-import sympy as sp
 import numpy as np
-
-def _edge_to_sym_from_edges(edges):
-    """takes a list of edges (tuples of 2 vertex id's, in the form ('v_1', 'v_2'))
-    and returns a dictionary of the same edges pointing to new sympy symbols.
-    These symbols are in the format l_i where i is the order of the initialization of the symbols.
-
-    Args:
-        edge_to_weight (dict[tuple[str]: float]): a dictionary of edges to weights
-
-    Returns:
-        dict[tuple[str]: sympy.core.symbol.Symbol]: dictionary of edges to symbols (representing weights)
-    """
-    if not isinstance(edges, list):
-        raise NotImplementedError("edges must be a list of tuples of 2 vertex id's, in the form ('v_1', 'v_2')")
-    edges = edges
-    edge_to_sym = {}
-    for i in range(len(edges)):
-        edge_to_sym[edges[i]] = sp.symbols(f'l_{i + 1}')
-    return edge_to_sym
 
 
 def _nodes_from_edges(edges):
@@ -80,7 +60,7 @@ def _find_terminal_edges(edges, terminal_nodes):
     return terminal_edges
 
 
-def _generate_sym_laplacian(edge_to_sym, nodes):
+def _generate_laplacian(edge_to_weight, nodes):
     """given an edge_to_sym dictionary, generates the appropriate Laplacian matrix
 
     Args:
@@ -90,47 +70,40 @@ def _generate_sym_laplacian(edge_to_sym, nodes):
     Returns:
         sympy.matrices.dense.MutableDenseMatrix: symbolic laplacian of the graph represented by edge_to_sym
     """
-    sym_lap = []
-    for i in range(len(nodes)):
-        sym_lap.append([])
-        for j in range(len(nodes)):
-            sym_lap[i].append(0)
+    Lap = np.zeros((len(nodes), len(nodes)))
     
-    for edge in list(edge_to_sym.keys()):
+    for edge in list(edge_to_weight.keys()):
         i = nodes.index(edge[0])
         j = nodes.index(edge[1])
 
-        sym_lap[i][j] = -edge_to_sym[edge]
-        sym_lap[i][i] = sym_lap[i][i] + (- sym_lap[i][j])
+        Lap[j][i] = edge_to_weight[edge]
+        Lap[i][i] = Lap[i][i] - (Lap[j][i])
 
-    return sp.Matrix(sym_lap)
+    return Lap
 
 
-def _hill_augmented_edge_to_sym(graph, augmentation_vertex):
-        """makes the edge_to_sym dictionary the Hill augmentation to vertex i of graph self.
+def _hill_augmented_edge_to_weight(graph, augmentation_vertex):
+    """makes the edge_to_sym dictionary the Hill augmentation to vertex i of graph self.
 
-        Args:
-            augmentation_vertex (str): vertex to which we are performing a Hill-augmentation to.
+    Args:
+        augmentation_vertex (str): vertex to which we are performing a Hill-augmentation to.
 
-        Returns:
-            dict: edge_to_sym dictionary of self Hill-augmented to vertex i
-        """
-        hill_edge_to_sym = {}
-        terminal_edges = []
-        for edge in graph.edges:
-            if edge[1] not in graph.terminal_nodes:
-                hill_edge_to_sym[edge] = graph.edge_to_sym[edge]
-            else:
-                terminal_edges.append(edge)
+    Returns:
+        dict: edge_to_sym dictionary of self Hill-augmented to vertex i
+    """
+    hill_edge_to_weight = {}
+    for edge in graph.edges:
+        if edge not in graph.terminal_edges:
+            hill_edge_to_weight[edge] = graph.edge_to_weight[edge]
 
-        for terminal_edge in terminal_edges:
-            new_hill_edge = (terminal_edge[0], augmentation_vertex)
-            if new_hill_edge not in hill_edge_to_sym.keys() and new_hill_edge[0] != new_hill_edge[1]:
-                hill_edge_to_sym[new_hill_edge] = graph.edge_to_sym[terminal_edge]
-            elif new_hill_edge[0] != new_hill_edge[1]:
-                hill_edge_to_sym[new_hill_edge] += graph.edge_to_sym[terminal_edge]
-        
-        return hill_edge_to_sym
+    for terminal_edge in graph.terminal_edges:
+        new_hill_edge = (terminal_edge[0], augmentation_vertex)
+        if new_hill_edge not in hill_edge_to_weight.keys() and new_hill_edge[0] != new_hill_edge[1]:
+            hill_edge_to_weight[new_hill_edge] = graph.edge_to_weight[terminal_edge]
+        elif new_hill_edge[0] != new_hill_edge[1]:
+            hill_edge_to_weight[new_hill_edge] += graph.edge_to_weight[terminal_edge]
+    
+    return hill_edge_to_weight
     
 
 def hill_augmented_graph(graph, augmentation_vertex):
@@ -138,19 +111,24 @@ def hill_augmented_graph(graph, augmentation_vertex):
         That is, any terminal edges are redirected into vertex i
 
         Args:
+            graph()
             i (Any): vertex id of desired vertex of augmentation
 
         Returns:
             LinearFrameworkGraph: hill augmented graph of self with superscript i
         """
+        if not isinstance(graph, LinearFrameworkGraph):
+            raise NotImplementedError("graph must be a LinearFrameworkGraph")
+        if not augmentation_vertex in graph.nodes:
+            raise(NotImplementedError("augmentation must be to an existing node"))
 
-        augmented_edge_to_sym = _hill_augmented_edge_to_sym(graph, augmentation_vertex)
-        augmented_graph = LinearFrameworkGraph(list(augmented_edge_to_sym.keys()), augmented_edge_to_sym)
+        augmented_edge_to_weight = _hill_augmented_edge_to_weight(graph, augmentation_vertex)
+        augmented_graph = LinearFrameworkGraph(augmented_edge_to_weight)
         return augmented_graph
 
 
 def terminalize(graph, node):
-    """makes terminal node in graph a terminal node
+    """makes node in graph a terminal node
 
     Args:
         graph (LinearFrameworkGraph): graph of interest
@@ -164,36 +142,29 @@ def terminalize(graph, node):
     if not node in graph.nodes:
         raise NotImplementedError("terminal_node must be a node of graph")
 
-    new_edge_to_sym = {}
+    new_edge_to_weight = {}
 
-    for key in graph.edge_to_sym.keys():
+    for key in graph.edge_to_weight.keys():
         if not key[0] == node:
-            new_edge_to_sym[key] = graph.edge_to_sym[key]
+            new_edge_to_weight[key] = graph.edge_to_weight[key]
     
-    new_edges = list(new_edge_to_sym.keys())
-    terminal_graph = LinearFrameworkGraph(new_edges, edge_to_sym=new_edge_to_sym)
+    terminal_graph = LinearFrameworkGraph(new_edge_to_weight)
 
     return terminal_graph
 
 class LinearFrameworkGraph:
     """
-    datatype for calculating symbolic expressions of linear framework results on directed, weighted graphs.
-    Since we treat the edge labels as arbitrary
+    datatype for calculating linear framework results on directed, weighted graphs.
 
     attributes:
         self.nodes: list of nodes
         self.edges: list of edges
         self.terminal_nodes: list of terminal nodes
-        self.edge_to_sym: dictionary from edges to symbolic edge weights
-        self.sym_lap: symbolic laplacian generated from edges_to_symbolic_weights
-
-    methods:
-        self.generate_random_edge_to_weight()
-        self.make_sym_to_weight()
-        self.hill_augmented_graph
+        self.edge_to_weight: dictionary from edges to edge weights
+        self.Lap: symbolic laplacian generated from edge_to_weight
 
     """
-    def __init__(self, edges, edge_to_sym=None):
+    def __init__(self, edge_to_weight):
         """initializes a LinearFrameworkGraph
         The input can be a list of tuples with 2 elements (edges).
         Each element in these tuples represents a vertex in the graph
@@ -204,69 +175,20 @@ class LinearFrameworkGraph:
         Args:
             edges (list[tuple[Any]]): list of edges
         """
-        if isinstance(edges, type(None)) and isinstance(edge_to_sym, type(None)):
-            raise NotImplementedError("edges and edge_to_sym cannot both be None")
-        if not isinstance(edges, list):
-            raise NotImplementedError('edges must be a list of tuples with two elements')
-        for edge in edges:
-            if not isinstance(edge, tuple) or len(edge) != 2:
-                raise NotImplementedError("edges must be 2-tuples of nodes in the form (v_1, v_2) for an edge from v_1 to v_2")
+        if not isinstance(edge_to_weight, dict):
+            raise NotImplementedError("edge_to_weight must be a dictionary edges as keys--that is tuples of two objects ('v_1', 'v_2') for an edge from 'v_1' to 'v_2' pointing to float weights")
+        edges = list(edge_to_weight.keys())
+        if not isinstance(edges[0], tuple) or len(edges[0]) != 2:
+            raise NotImplementedError("edges must be 2-tuples of nodes in the form (v_1, v_2) for an edge from v_1 to v_2")
 
         self.edges = edges
 
-        if edge_to_sym is not None:
-            self.edge_to_sym = edge_to_sym
-        else:
-            self.edge_to_sym = _edge_to_sym_from_edges(self.edges)
+        self.edge_to_weight = edge_to_weight
 
         self.nodes = _nodes_from_edges(self.edges)
         self.terminal_nodes = _find_terminal_nodes(self.edges, self.nodes)
         self.terminal_edges = _find_terminal_edges(self.edges, self.terminal_nodes)
 
-        self.sym_lap = _generate_sym_laplacian(self.edge_to_sym, self.nodes)
-
-    def generate_random_edge_to_weight(self, seed=None):
-        """given a list (or other iterable) of edges in the form ('v_1', 'v_2'),
-        makes a dictionary with the edges as keys pointing at random weights
-        sampled from the range [10**(-3), 10**6]
-
-        Args:
-            seed (int, float): seed of random process
-
-        Returns:
-            dict[tuple[Any]: float]: edges to randomly generated weights
-        """
-        if not isinstance(seed, (type(None), float, int)):
-            raise NotImplementedError("seed must be a float, an int, or be left a None")
-        np.random.seed(seed)
-        edge_to_weight = {}
-        for edge in self.edges:
-            edge_to_weight[(edge[0], edge[1])] = 10 ** ((6 * np.random.rand()) - 3)
-        return edge_to_weight
-    
-
-    def make_sym_to_weight(self, edge_to_weight=None):
-        """makes a sym_to_weight dict used for evaluating symbolic expressions at a given point.
-        That is, substituting the symbolic label on an edge for an explicit number, or a different symbol.
-        Note that the keys of edge_to_weight must be contained in self.edges.
-
-        If you just want to sample randomly, leave edge_to_weight unassigned and a random edge_to_weight dict will be generated automatically
-        with each edge weight being sampled uniformly from the range [10**(-3), 10**6].
-
-        Args:
-            edge_to_weight (dict[tuple[Any]: Any], optional): dictionary of edges pointing to their desired weights. Defaults to None.
-
-        Returns:
-            dict[sympy.symbol: Any]: dictionary relating the symbolic edge weights to their respective new weights in edge_to_weight
-        """
-        if not isinstance(edge_to_weight, (type(None), dict)):
-            raise NotImplementedError("edge_to_weight must be a dictionary of edges pointing to their desired weights")
-        if edge_to_weight == None:
-            edge_to_weight = self.generate_random_edge_to_weight()
-        
-        sym_to_weight = {}
-        for edge in edge_to_weight.keys():
-            sym_to_weight[self.edge_to_sym[edge]] = edge_to_weight[edge]
-        return sym_to_weight
+        self.Lap = _generate_laplacian(self.edge_to_weight, self.nodes)
 
 

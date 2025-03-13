@@ -8,188 +8,160 @@ tests functionality of linear_framework_graph.py
 that is the ability to create objects of type LinearFrameworkGraph
 """
 from linearframework.linear_framework_graph import LinearFrameworkGraph, hill_augmented_graph, terminalize
+from linearframework.gen_graphs import gen_core_butterfly_dict
 
 import pytest
-import sympy as sp
+import numpy as np
 
-def test_init_asserts():
-    k3_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-    ]
-    k3 = LinearFrameworkGraph(k3_edges)
+## TESTING THE INITIALIZATION OF GRAPHS ---------------------------------------------------------
 
-    assert k3.nodes == ['1', '2', '3']
-    assert k3.edges == k3_edges
-    assert k3.terminal_nodes == []
-    assert k3.terminal_edges == []
-    assert str(k3.edge_to_sym) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6}"
-    assert str(k3.sym_lap) == 'Matrix([[l_1 + l_2, -l_1, -l_2], [-l_3, l_3 + l_4, -l_4], [-l_5, -l_6, l_5 + l_6]])'
+k3_edge_to_weight = {
+        (0, 1): 1,
+        (1, 0): 2,
+        (0, 2): 3,
+        (2, 0): 4,
+        (1, 2): 5,
+        (2, 1): 6,
+    }
+k3 = LinearFrameworkGraph(k3_edge_to_weight)
 
-    k3_2t_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-        ('2', '4'),
-        ('3', '5')
-    ]
-    k3_2t = LinearFrameworkGraph(k3_2t_edges)
+k3_2t_edge_to_weight = {
+        (0, 1): 1,
+        (1, 0): 2,
+        (0, 2): 3,
+        (2, 0): 4,
+        (1, 2): 5,
+        (2, 1): 6,
+        (1, 3): 7,
+        (2, 4): 8,
+    }
+k3_2t = LinearFrameworkGraph(k3_2t_edge_to_weight)
 
-    assert k3_2t.nodes == ['1', '2', '3', '4', '5']
-    assert k3_2t.edges == k3_2t_edges
-    assert k3_2t.terminal_nodes == ['4', '5']
-    assert k3_2t.terminal_edges == [('2', '4'), ('3', '5')]
-    assert str(k3_2t.edge_to_sym) == "{('1', '2'): l_1, ('1', '3'): l_2, ('2', '1'): l_3, ('2', '3'): l_4, ('3', '1'): l_5, ('3', '2'): l_6, ('2', '4'): l_7, ('3', '5'): l_8}"
-    assert str(k3_2t.sym_lap) == 'Matrix([[l_1 + l_2, -l_1, -l_2, 0, 0], [-l_3, l_3 + l_4 + l_7, -l_4, -l_7, 0], [-l_5, -l_6, l_5 + l_6 + l_8, 0, -l_8], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])'
+random_k3_butterfly_edge_to_weight = gen_core_butterfly_dict(10, 3)
+butterfly_k3 = LinearFrameworkGraph(random_k3_butterfly_edge_to_weight)
+
+random_terminal_k3_butterfly_edge_to_weight = gen_core_butterfly_dict(10, 3, tails=True)
+terminal_butterfly_k3 = LinearFrameworkGraph(random_terminal_k3_butterfly_edge_to_weight)
 
 def test_init_raises():
+
     with pytest.raises(NotImplementedError):
         LinearFrameworkGraph('oops')
-    with pytest.raises(NotImplementedError):
-        LinearFrameworkGraph(['oops'])
-    with pytest.raises(NotImplementedError):
-        LinearFrameworkGraph([('1', '2', '3')])
-
-def test_generate_random_edge_to_weight_asserts():
-    k3_2t_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-        ('2', '4'),
-        ('3', '5')
-    ]
-
-    k3_2t = LinearFrameworkGraph(k3_2t_edges)
-    assert k3_2t.generate_random_edge_to_weight(seed=1) == {('1', '2'): 0.3177840006884067, ('1', '3'): 20.986835607646604, ('2', '1'): 0.001001581395585897, ('2', '3'): 0.06516215458215692, ('3', '1'): 0.0075951323286823896, ('3', '2'): 0.0035812246787002297, ('2', '4'): 0.013108749615263331, ('3', '5'): 0.11840345146135145}
-
-
-def test_generate_random_edge_to_weight():
-    k3_2t_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-        ('2', '4'),
-        ('3', '5')
-    ]
-
-    k3_2t = LinearFrameworkGraph(k3_2t_edges)
-    with pytest.raises(NotImplementedError):
-        k3_2t.generate_random_edge_to_weight('oops')
-
-
-def test_make_sym_weight_asserts():
-    expected_sym_to_weight = {
-        sp.Symbol('l_1'): 1,
-        sp.Symbol('l_2'): 2,
-        sp.Symbol('l_3'): 3,
-        sp.Symbol('l_4'): 4,
-        sp.Symbol('l_5'): 5,
-        sp.Symbol('l_6'): 6
-        }
     
-    k3_dict = {
-        ('1', '2'): 1,
-        ('1', '3'): 2,
-        ('2', '1'): 3,
-        ('2', '3'): 4,
-        ('3', '1'): 5,
-        ('3', '2'): 6,
-    }
-    k3 = LinearFrameworkGraph(list(k3_dict.keys()))
-    
-    assert k3.make_sym_to_weight(k3_dict) == expected_sym_to_weight
-    assert isinstance(k3.make_sym_to_weight(), dict)
-    assert len(k3.make_sym_to_weight().keys()) == len(k3_dict.keys())
-
-
-def test_make_sym_weight_raises():
-    k3_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-    ]
-    k3 = LinearFrameworkGraph(k3_edges)
-
     with pytest.raises(NotImplementedError):
-        k3.make_sym_to_weight('oops')
+        LinearFrameworkGraph({(1, 2, 3):1})
+
+def test_init_assert():
+
+    # k3 asserts ----------------------------------------
+    assert k3.edges == list(k3_edge_to_weight.keys())
+    assert k3.edge_to_weight == k3_edge_to_weight
+    assert k3.terminal_edges == []
+    assert k3.terminal_nodes == []
+    assert k3.nodes == [0, 1, 2]
+
+    expected_k3_lap = np.array([
+        [ -4.,   2.,   4.],
+        [  1.,  -7.,   6.],
+        [  3.,   5., -10.]
+        ])
+    assert k3.Lap.all() == expected_k3_lap.all()
+
+    # k3 2t asserts ----------------------------------------
+    assert k3_2t.edges == list(k3_2t_edge_to_weight.keys())
+    assert k3_2t.edge_to_weight == k3_2t_edge_to_weight
+    assert k3_2t.terminal_edges == [(1, 3), (2, 4)]
+    assert k3_2t.terminal_nodes == [3, 4]
+    assert k3_2t.nodes == [0, 1, 2, 3, 4]
+
+    expected_k3_2t_lap = np.array([
+        [ -4.,   2.,   4.,   0.,   0.],
+        [  1., -14.,   6.,   0.,   0.],
+        [  3.,   5., -18.,   0.,   0.],
+        [  0.,   7.,   0.,   0.,   0.],
+        [  0.,   0.,   8.,   0.,   0.]
+        ])
+    assert k3_2t.Lap.all() == expected_k3_2t_lap.all()
+
+    # non-terminal butterfly asserts ----------------------------------------
+    assert butterfly_k3.edges == list(random_k3_butterfly_edge_to_weight.keys())
+    assert butterfly_k3.edge_to_weight == random_k3_butterfly_edge_to_weight
+    assert butterfly_k3.terminal_edges == []
+    assert butterfly_k3.terminal_nodes == []
+
+    for i in range(len(butterfly_k3.Lap)):
+        assert sum(butterfly_k3.Lap[:, i]) < 10**(-10)
+    
+    for edge in butterfly_k3.edges:
+        source = butterfly_k3.nodes.index(edge[0])
+        target = butterfly_k3.nodes.index(edge[1])
+
+        assert butterfly_k3.Lap[target, source] == random_k3_butterfly_edge_to_weight[edge]
+
+    # terminal butterfly asserts ----------------------------------------
+    assert terminal_butterfly_k3.edges == list(random_terminal_k3_butterfly_edge_to_weight.keys())
+    assert terminal_butterfly_k3.edge_to_weight == random_terminal_k3_butterfly_edge_to_weight
+    assert terminal_butterfly_k3.terminal_edges == [('p_3', 'e'), ('p_bar_3', 'e_bar')]
+    assert terminal_butterfly_k3.terminal_nodes == ['e', 'e_bar']
+
+    for i in range(len(terminal_butterfly_k3.Lap)):
+        assert sum(terminal_butterfly_k3.Lap[:, i]) < 10**(-10)
+    
+    for edge in terminal_butterfly_k3.edges:
+        source = terminal_butterfly_k3.nodes.index(edge[0])
+        target = terminal_butterfly_k3.nodes.index(edge[1])
+
+        assert terminal_butterfly_k3.Lap[target, source] == random_terminal_k3_butterfly_edge_to_weight[edge]
+    
+
+## TESTING HILL AUGMENTATION ---------------------------------------------------------
+
+def test_hill_augmented_graph_raises():
+    with pytest.raises(NotImplementedError):
+        hill_augmented_graph('oops', 1)
+    
+    with pytest.raises(NotImplementedError):
+        hill_augmented_graph(k3_2t, 7)
 
 
 def test_hill_augmented_graph_asserts():
-    K_edges = [
-        (1, 2), (1, 6),
-        (2, 1), (2, 3),
-        (3, 4), (3, 6),
-        (4, 2), (4, 5), (4, 6),
-        (5, 1), (5, 2), (5, 6)
-    ]
-    K = LinearFrameworkGraph(K_edges)
+    k3_2t_a0 = hill_augmented_graph(k3_2t, 0)
 
-    K_augmented = hill_augmented_graph(K, 1)
-
-    assert str(K_augmented.edge_to_sym) == '{(1, 2): l_1, (2, 1): l_3, (2, 3): l_4, (3, 4): l_5, (4, 2): l_7, (4, 5): l_8, (5, 1): l_10 + l_12, (5, 2): l_11, (3, 1): l_6, (4, 1): l_9}'
-
-    assert K_augmented.sym_lap.shape == (5, 5)
-
-    L_edges = [
-        (1, 2), (1, 6),
-        (2, 3), (2, 5), 
-        (3, 2), (3, 4), (3, 6),
-        (4, 1), (4, 3), (4, 5), (4, 6)
-    ]
-    L = LinearFrameworkGraph(L_edges)
-
-    L_augmented = hill_augmented_graph(L, 1)
-
-    assert str(L_augmented.edge_to_sym) == '{(1, 2): l_1, (2, 3): l_3, (3, 2): l_5, (3, 4): l_6, (4, 1): l_10 + l_11 + l_8, (4, 3): l_9, (2, 1): l_4, (3, 1): l_7}'
-
-    assert L_augmented.sym_lap.shape == (4, 4)
+    expected_k3_2t_a0_lap = np.array([
+        [ -4.,   9.,  12.],
+        [  1., -14.,   6.],
+        [  3.,   5., -18.]])
+    assert k3_2t_a0.Lap.all() == expected_k3_2t_a0_lap.all()
+    assert k3_2t_a0.terminal_edges == []
+    assert k3_2t_a0.terminal_nodes == []
 
 
-def test_terminalize_asserts():
-    k3_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-    ]
-    k3 = LinearFrameworkGraph(k3_edges)
-
-    assert terminalize(k3, '3').terminal_edges == [('1', '3'), ('2', '3')]
-    assert terminalize(k3, '1').terminal_edges == [('2', '1'), ('3', '1')]
-    assert terminalize(k3, '2').terminal_edges == [('1', '2'), ('3', '2')]
+    hill_butterfly_1 = hill_augmented_graph(terminal_butterfly_k3, '1')
+    for edge in hill_butterfly_1.edges:
+        if edge == ('p_3', '1'):
+            assert hill_butterfly_1.edge_to_weight[edge] == terminal_butterfly_k3.edge_to_weight[edge] + terminal_butterfly_k3.edge_to_weight[('p_3', 'e')]
+        elif edge == ('p_bar_3', '1'):
+            assert hill_butterfly_1.edge_to_weight[edge] == terminal_butterfly_k3.edge_to_weight[edge] + terminal_butterfly_k3.edge_to_weight[('p_bar_3', 'e_bar')]
+        else:
+            assert hill_butterfly_1.edge_to_weight[edge] == terminal_butterfly_k3.edge_to_weight[edge]
+    
+    assert hill_butterfly_1.terminal_edges == []
+    assert hill_butterfly_1.terminal_nodes == []
 
 
-
+## TESTING TERMINALIZE ---------------------------------------
 def test_terminalize_raises():
-    k3_edges = [
-        ('1', '2'),
-        ('1', '3'),
-        ('2', '1'),
-        ('2', '3'),
-        ('3', '1'),
-        ('3', '2'),
-    ]
-    k3 = LinearFrameworkGraph(k3_edges)
+    with pytest.raises(NotImplementedError):
+        terminalize('oops', 1)
     
     with pytest.raises(NotImplementedError):
-        terminalize('oops', '1')
-    with pytest.raises(NotImplementedError):
-        terminalize(k3, 'oops')
+        terminalize(k3, 5)
+
+def test_terminalize_asserts():
+    terminalized_k3 = terminalize(k3, 0)
+
+    assert 0 in terminalized_k3.terminal_nodes
+
+    for edge in k3.edges:
+        if not 0 == edge[0]:
+            assert terminalized_k3.edge_to_weight[edge] == k3.edge_to_weight[edge]
