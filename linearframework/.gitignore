@@ -1,1 +1,5 @@
 *.egg-info
+
+scripts/splitting-probability-error-ratio/
+results/k=5 transient numerics.png
+results/k=3 transient numerics.png

@@ -79,11 +79,7 @@ def _generate_laplacian(edge_to_weight, nodes):
         Lap[j][i] = edge_to_weight[edge]
         Lap[i][i] = Lap[i][i] - (Lap[j][i])
 
-<<<<<<< HEAD
     return Lap
-=======
-    return - sp.Matrix(sym_lap).T
->>>>>>> bd1c3a05bd6580dbaf6aebeed8b29a09753e76f1
 
 
 def _hill_augmented_edge_to_weight(graph, augmentation_vertex):

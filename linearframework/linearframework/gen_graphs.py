@@ -1,5 +1,24 @@
 import numpy as np
-import networkx as nx
+
+
+def gen_random_edge_to_weight(edges, random_seed=None):
+    """generates an edge_to_weight dictionary where all edge labels are chosen from a uniform distribution 
+    with the range [10**(-3), 10**3] without consideration for equilibrium.
+    In short, all edges are random, and all graphs are away from equilibrium.
+
+    Args:
+        edges (list[tuple]): list of edges
+
+    Returns:
+        edge_to_weight: edge_to_weight dictionary with random edges.
+    """
+    rng = np.random.default_rng(random_seed)
+    edge_to_weight = {}
+
+    for edge in edges:
+        edge_to_weight[edge] = 10 ** (6 * rng.random() - 3)
+    
+    return edge_to_weight
 
 def gen_erlang_process_dict(number_of_states, rate=None):
     """generates the edge-to-weight dictionary of an erlang process. 
